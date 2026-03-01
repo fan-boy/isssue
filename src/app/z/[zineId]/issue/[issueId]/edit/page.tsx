@@ -91,7 +91,7 @@ export default function EditPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (pageId && content.blocks.length > 0) saveContent();
+      if (pageId) saveContent();
     }, 1500);
     return () => clearTimeout(timer);
   }, [content, pageId, saveContent]);
@@ -402,13 +402,17 @@ function BlockComponent({
   const [localText, setLocalText] = useState(block.type === 'text' ? block.content : '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
+  
+  // Track the block content to only sync when it actually changes from outside
+  const blockContent = block.type === 'text' ? block.content : '';
 
-  // Sync local text with block content
+  // Sync local text with block content only when content changes externally
+  // (not during editing - we don't want to overwrite what the user is typing)
   useEffect(() => {
-    if (block.type === 'text') {
+    if (block.type === 'text' && !isEditing) {
       setLocalText(block.content);
     }
-  }, [block]);
+  }, [blockContent, isEditing]);
 
   // Focus textarea when editing
   useEffect(() => {
@@ -456,10 +460,22 @@ function BlockComponent({
 
   // Save text on blur
   const handleTextBlur = () => {
-    if (block.type === 'text' && localText !== block.content) {
+    if (block.type === 'text') {
+      // Always update on blur to ensure changes are saved
       onUpdate({ content: localText });
     }
     onStopEdit();
+  };
+  
+  // Handle keyboard shortcuts in text editing
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleTextBlur();
+    }
+    // Cmd/Ctrl+Enter to finish editing
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      handleTextBlur();
+    }
   };
 
   // Get font styles
@@ -502,7 +518,7 @@ function BlockComponent({
             onChange={(e) => setLocalText(e.target.value)}
             onBlur={handleTextBlur}
             onMouseDown={(e) => e.stopPropagation()}
-            onKeyDown={(e) => { if (e.key === 'Escape') handleTextBlur(); }}
+            onKeyDown={handleKeyDown}
             className="bg-white border-2 border-indigo-500 p-3 min-w-[200px] min-h-[100px] resize outline-none rounded"
             style={{
               color: block.color,
