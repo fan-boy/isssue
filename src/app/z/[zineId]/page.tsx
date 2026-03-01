@@ -116,12 +116,12 @@ export default function ZineHomePage() {
     <main className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-white/50 hover:text-white transition-colors">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <Link href="/dashboard" className="text-white/50 hover:text-white transition-colors flex-shrink-0">
               ←
             </Link>
-            <span className="text-xl font-semibold text-white">{zine.name}</span>
+            <span className="text-lg md:text-xl font-semibold text-white truncate">{zine.name}</span>
           </div>
           <Link 
             href={`/z/${zineId}/settings`} 
@@ -133,7 +133,7 @@ export default function ZineHomePage() {
       </header>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -141,12 +141,12 @@ export default function ZineHomePage() {
         >
           {/* Current Issue */}
           {currentIssue && (
-            <div className="grid md:grid-cols-[280px_1fr] gap-12 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 md:gap-12 mb-16">
               {/* Magazine Cover - Clean, editorial style */}
               <motion.div 
                 whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
-                className="aspect-[3/4] relative"
+                className="aspect-[3/4] relative max-w-[240px] md:max-w-none mx-auto md:mx-0"
               >
                 <div className="absolute inset-0 rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden">
                   {/* AI-generated cover for published issues */}
@@ -229,7 +229,7 @@ export default function ZineHomePage() {
               </motion.div>
 
               {/* Issue Details */}
-              <div className="flex flex-col justify-center">
+              <div className="flex flex-col justify-center text-center md:text-left">
                 <p className="text-white/40 text-sm uppercase tracking-widest mb-3">
                   {currentIssue.status === 'draft' ? 'Now Editing' : 'Latest Issue'}
                 </p>
@@ -249,6 +249,7 @@ export default function ZineHomePage() {
                 {currentIssue.status !== 'draft' && <div className="mb-8" />}
 
                 {/* Action Button */}
+                <div className="flex justify-center md:justify-start">
                 {currentIssue.status === 'draft' ? (
                   <Link href={`/z/${zineId}/issue/${currentIssue.id}/edit`}>
                     <motion.button
@@ -270,6 +271,7 @@ export default function ZineHomePage() {
                     </motion.button>
                   </Link>
                 )}
+                </div>
 
                 {/* Contributors */}
                 <div className="mt-12 pt-8 border-t border-white/10">

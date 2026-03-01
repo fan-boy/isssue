@@ -193,36 +193,35 @@ export default function EditPage() {
 
       {/* Header */}
       <header className="bg-[#141414] border-b border-white/10 flex-shrink-0">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white text-sm">← Back</Link>
-            <span className="text-white/30">|</span>
-            <span className="text-white/80 text-sm">{zineName}</span>
+        <div className="px-4 md:px-6 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
+            <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white text-sm flex-shrink-0">←</Link>
+            <span className="text-white/80 text-sm truncate hidden sm:block">{zineName}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-white/40 text-sm">
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            <span className="text-white/40 text-xs hidden sm:block">
               {saving ? 'Saving...' : lastSaved ? '✓ Saved' : ''}
             </span>
             <button 
               onClick={togglePageStatus} 
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                 pageStatus === 'ready' 
                   ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
                   : 'bg-white/10 text-white/70 hover:bg-white/20'
               }`}
             >
-              {pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}
+              {pageStatus === 'ready' ? '✓ Ready' : 'Ready'}
             </button>
-            <button onClick={handleDone} className="px-5 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90">
+            <button onClick={handleDone} className="px-4 md:px-5 py-2 bg-white text-black rounded-lg text-xs md:text-sm font-medium hover:bg-white/90">
               Done
             </button>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Toolbar */}
-        <div className="w-14 bg-[#141414] border-r border-white/10 flex flex-col items-center py-4 gap-2">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        {/* Toolbar - Desktop sidebar */}
+        <div className="hidden md:flex w-14 bg-[#141414] border-r border-white/10 flex-col items-center py-4 gap-2">
           <ToolBtn onClick={() => addTextBlock()} icon="T" label="Text" />
           <ToolBtn onClick={() => fileInputRef.current?.click()} icon="🖼" label="Image" />
           <div className="w-6 h-px bg-white/10 my-2" />
@@ -230,7 +229,7 @@ export default function EditPage() {
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 flex items-center justify-center p-8 overflow-auto relative bg-[#1a1a1a]">
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8 pb-20 md:pb-8 overflow-auto relative bg-[#1a1a1a]">
           {/* Prompts */}
           <AnimatePresence>
             {showPrompts && (
@@ -378,6 +377,13 @@ export default function EditPage() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Mobile Bottom Toolbar */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141414] border-t border-white/10 px-4 py-3 flex justify-center gap-4 z-20">
+          <ToolBtn onClick={() => addTextBlock()} icon="T" label="Text" />
+          <ToolBtn onClick={() => fileInputRef.current?.click()} icon="🖼" label="Image" />
+          <ToolBtn onClick={() => setShowPrompts(!showPrompts)} icon="💡" label="Ideas" active={showPrompts} />
         </div>
       </div>
     </main>

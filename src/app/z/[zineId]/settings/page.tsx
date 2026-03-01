@@ -220,17 +220,17 @@ export default function ZineSettingsPage() {
     <main className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white transition-colors">
-            ← Back
+            ←
           </Link>
           <span className="font-medium text-white">Settings</span>
-          <div className="w-12" />
+          <div className="w-6 md:w-12" />
         </div>
       </header>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-2xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
