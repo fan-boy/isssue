@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
 function getSupabase() {
   return createClient(
@@ -9,13 +8,7 @@ function getSupabase() {
   );
 }
 
-function getOpenAI() {
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!,
-  });
-}
-
-// Vercel Cron calls this endpoint
+// Vercel Cron calls this endpoint daily at 9 AM UTC
 export async function GET(request: NextRequest) {
   // Verify cron secret in production
   const authHeader = request.headers.get('authorization');
@@ -54,14 +47,17 @@ export async function GET(request: NextRequest) {
           .update({ status: 'published' })
           .eq('id', issue.id);
 
-        // Generate cover
-        const coverUrl = await generateCover(issue.id, issue.zines, issue.issue_number);
-        
+        // Fire off cover generation via Supabase Edge Function (fire-and-forget)
+        // Don't await - let it run in the background
+        triggerCoverGeneration(issue.id).catch((err) => {
+          console.error(`Failed to trigger cover generation for ${issue.id}:`, err);
+        });
+
         results.push({
           issueId: issue.id,
           zineId: issue.zine_id,
           status: 'published',
-          coverUrl,
+          coverGeneration: 'triggered',
         });
       } catch (err) {
         console.error(`Failed to publish issue ${issue.id}:`, err);
@@ -78,7 +74,6 @@ export async function GET(request: NextRequest) {
       message: `Processed ${issuesToPublish.length} issues`,
       results,
     });
-
   } catch (error) {
     console.error('Cron error:', error);
     return NextResponse.json(
@@ -88,103 +83,22 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function generateCover(
-  issueId: string, 
-  zines: { name: string } | { name: string }[] | null,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _issueNumber: number
-): Promise<string | null> {
-  const supabase = getSupabase();
-  const openai = getOpenAI();
+async function triggerCoverGeneration(issueId: string): Promise<void> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  try {
-    const zineName = Array.isArray(zines) ? zines[0]?.name : zines?.name || 'Untitled';
+  // Call the Supabase Edge Function
+  const response = await fetch(`${supabaseUrl}/functions/v1/generate-cover`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${supabaseAnonKey}`,
+    },
+    body: JSON.stringify({ issueId }),
+  });
 
-    // Get page content
-    const { data: pages } = await supabase
-      .from('pages')
-      .select('content')
-      .eq('issue_id', issueId);
-
-    const textContent: string[] = [];
-    for (const page of pages || []) {
-      const content = page.content as { blocks?: Array<{ type: string; content?: string }> };
-      if (content?.blocks) {
-        for (const block of content.blocks) {
-          if (block.type === 'text' && block.content) {
-            textContent.push(block.content);
-          }
-        }
-      }
-    }
-
-    const contentSummary = textContent.join(' ').slice(0, 2000) || 'A creative collaborative zine among friends';
-
-    // Generate prompt
-    const promptResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You create image generation prompts for magazine covers. Output ONLY the prompt, nothing else. 
-Keep it under 200 words. Focus on mood, colors, abstract imagery. 
-Never include text/words/letters in the image description.
-Style: modern indie zine, editorial, artistic, clean composition with space at top for title.`
-        },
-        {
-          role: 'user',
-          content: `Create an image prompt for a magazine cover. 
-Magazine name: "${zineName}"
-Content themes: ${contentSummary}`
-        }
-      ],
-      max_tokens: 300,
-    });
-
-    const imagePrompt = promptResponse.choices[0]?.message?.content || 
-      `Abstract artistic magazine cover, modern editorial design, warm colors, indie zine aesthetic`;
-
-    // Generate image
-    const imageResponse = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: imagePrompt,
-      n: 1,
-      size: '1024x1792',
-      quality: 'standard',
-    });
-
-    const generatedImageUrl = imageResponse.data?.[0]?.url;
-    if (!generatedImageUrl) return null;
-
-    // Upload to Supabase
-    const imageRes = await fetch(generatedImageUrl);
-    const imageBuffer = await imageRes.arrayBuffer();
-    
-    const fileName = `covers/${issueId}.png`;
-    
-    await supabase.storage
-      .from('page-images')
-      .upload(fileName, imageBuffer, {
-        contentType: 'image/png',
-        upsert: true,
-      });
-
-    const { data: urlData } = supabase.storage
-      .from('page-images')
-      .getPublicUrl(fileName);
-
-    const coverUrl = urlData.publicUrl;
-
-    // Update issue
-    await supabase
-      .from('issues')
-      .update({ cover_url: coverUrl })
-      .eq('id', issueId);
-
-    return coverUrl;
-
-  } catch (error) {
-    console.error('Cover generation failed:', error);
-    return null;
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Edge function failed: ${response.status} ${text}`);
   }
 }
