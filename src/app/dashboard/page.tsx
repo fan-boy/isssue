@@ -147,53 +147,45 @@ export default function DashboardPage() {
                   >
                     <Link href={`/z/${zine.id}`}>
                       <motion.div 
-                        whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
-                        className={`aspect-[3/4] rounded-xl p-5 flex flex-col cursor-pointer relative overflow-hidden group ${
-                          isDraft 
-                            ? '' 
-                            : 'bg-[#1a1a1a] border border-white/10 hover:border-white/25'
-                        }`}
+                        whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] p-5 flex flex-col cursor-pointer relative overflow-hidden group shadow-md hover:shadow-xl transition-shadow"
                       >
-                        {/* Gradient background for active drafts */}
-                        {isDraft && (
-                          <>
-                            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-xl" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/40 via-transparent to-pink-500/40 rounded-xl" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 rounded-xl" />
-                          </>
-                        )}
+                        {/* Paper texture overlay */}
+                        <div className="absolute inset-0 opacity-30" style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                        }} />
                         
                         {/* Content */}
                         <div className="relative z-10 flex flex-col h-full">
-                          {/* Top */}
-                          <div className="flex items-start justify-between">
-                            <span className={`text-[11px] font-mono ${isDraft ? 'text-white/60' : 'text-white/40'}`}>
-                              {latestIssue ? `#${String(latestIssue.issue_number).padStart(2, '0')}` : 'NEW'}
+                          {/* Top line */}
+                          <div className="flex items-start justify-between text-[#2d2d2d]">
+                            <span className="text-[10px] font-light tracking-widest uppercase">
+                              {latestIssue ? `Issue ${latestIssue.issue_number}` : 'New'}
                             </span>
                             {isDraft && (
-                              <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
-                                ✨ Active
-                              </span>
+                              <span className="w-2 h-2 rounded-full bg-[#2d2d2d] animate-pulse" title="In progress" />
                             )}
                           </div>
                           
-                          {/* Center */}
+                          {/* Center - Magazine title */}
                           <div className="flex-1 flex flex-col items-center justify-center text-center">
-                            {isDraft && <span className="text-2xl mb-2">🎨</span>}
-                            <h2 className="text-lg font-semibold text-white mb-1">
+                            <h2 className="text-xl font-serif text-[#2d2d2d] tracking-wide">
                               {zine.name}
                             </h2>
                             {zine.owner_id === user?.id && (
-                              <span className={`text-[11px] ${isDraft ? 'text-white/50' : 'text-white/30'}`}>Owner</span>
+                              <span className="text-[9px] text-[#999] mt-1 uppercase tracking-widest">Owner</span>
                             )}
                           </div>
                           
                           {/* Bottom */}
-                          <div className={`flex items-end justify-between text-[11px] ${isDraft ? 'text-white/60' : 'text-white/40'}`}>
-                            <span>{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
-                            <span>Day {zine.release_day}</span>
+                          <div className="flex items-end justify-between text-[9px] text-[#999] uppercase tracking-wider">
+                            <span>{memberCount} contributor{memberCount !== 1 ? 's' : ''}</span>
+                            <span>Monthly</span>
                           </div>
                         </div>
+                        
+                        {/* Spine effect */}
+                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/10 to-transparent" />
                       </motion.div>
                     </Link>
                   </motion.div>

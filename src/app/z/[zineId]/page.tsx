@@ -28,7 +28,7 @@ interface PageData {
   id: string;
   user_id: string;
   content: { blocks: unknown[] };
-  profiles: { name: string; color: string };
+  profiles: { name: string; color: string; avatar_url: string | null };
 }
 
 export default function ZineHomePage() {
@@ -63,7 +63,7 @@ export default function ZineHomePage() {
         if (issuesData.length > 0) {
           const { data: pagesData } = await supabase
             .from('pages')
-            .select('id, user_id, content, profiles(name, color)')
+            .select('id, user_id, content, profiles(name, color, avatar_url)')
             .eq('issue_id', issuesData[0].id)
             .order('page_number', { ascending: true });
           if (pagesData) setCurrentIssuePages(pagesData as unknown as PageData[]);
@@ -125,98 +125,72 @@ export default function ZineHomePage() {
         >
           {/* Current Issue */}
           {currentIssue && (
-            <div className="grid md:grid-cols-[300px_1fr] gap-10 mb-16">
-              {/* Magazine Cover - Exciting Draft Version */}
+            <div className="grid md:grid-cols-[280px_1fr] gap-12 mb-16">
+              {/* Magazine Cover - Clean, editorial style */}
               <motion.div 
-                className="aspect-[3/4] relative group"
-                whileHover={{ scale: 1.02, rotateY: 5 }}
+                whileHover={{ y: -8 }}
                 transition={{ duration: 0.3 }}
-                style={{ perspective: '1000px' }}
+                className="aspect-[3/4] relative"
               >
-                {currentIssue.status === 'draft' ? (
-                  // Draft: Exciting gradient cover
-                  <div className="absolute inset-0 rounded-xl overflow-hidden">
-                    {/* Animated gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600" />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/50 via-transparent to-pink-500/50 animate-pulse" style={{ animationDuration: '3s' }} />
-                    
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    
-                    {/* Noise texture */}
-                    <div className="absolute inset-0 opacity-20" style={{ 
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` 
-                    }} />
-                    
-                    {/* Content */}
-                    <div className="relative h-full flex flex-col p-6 text-white">
-                      <div className="flex items-start justify-between">
-                        <span className="text-xs font-mono opacity-60">
-                          #{String(currentIssue.issue_number).padStart(2, '0')}
-                        </span>
-                        <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded text-[10px] font-medium uppercase tracking-wider">
-                          In Progress
-                        </span>
-                      </div>
-                      
-                      <div className="flex-1 flex flex-col items-center justify-center text-center">
-                        <motion.div
-                          animate={{ y: [0, -5, 0] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <span className="text-5xl mb-4 block">✨</span>
-                        </motion.div>
-                        <h2 className="text-2xl font-bold mb-2">{zine.name}</h2>
-                        <p className="text-sm opacity-80">{formatMonth(currentIssue.month)}</p>
-                        <p className="text-xs opacity-60 mt-3">
-                          {pagesWithContent}/{currentIssuePages.length} pages ready
-                        </p>
-                      </div>
-                      
-                      <div className="text-center">
-                        <p className="text-xs opacity-60">
-                          {daysUntilDeadline > 0 ? `${daysUntilDeadline} days until reveal` : 'Reveals today!'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  // Published: Clean cover
-                  <div className="absolute inset-0 bg-[#1a1a1a] border border-white/10 rounded-xl p-6 flex flex-col">
+                <div className="absolute inset-0 rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden">
+                  {/* Paper texture */}
+                  <div className="absolute inset-0 opacity-40" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                  }} />
+                  
+                  {/* Content */}
+                  <div className="relative h-full flex flex-col p-6">
+                    {/* Top */}
                     <div className="flex items-start justify-between">
-                      <span className="text-[11px] text-white/40 font-mono">
-                        #{String(currentIssue.issue_number).padStart(2, '0')}
+                      <span className="text-[10px] text-[#666] uppercase tracking-[0.2em]">
+                        Issue {currentIssue.issue_number}
                       </span>
-                      <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-[10px] font-medium rounded">
-                        Published
-                      </span>
+                      {currentIssue.status === 'draft' && (
+                        <span className="w-2 h-2 rounded-full bg-[#2d2d2d]" title="In progress" />
+                      )}
                     </div>
+                    
+                    {/* Center */}
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <h2 className="text-xl font-semibold text-white mb-1">{zine.name}</h2>
-                      <span className="text-sm text-white/40">{formatMonth(currentIssue.month)}</span>
+                      <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-2">
+                        {zine.name}
+                      </h2>
+                      <p className="text-sm text-[#666]">{formatMonth(currentIssue.month)}</p>
+                      
+                      {currentIssue.status === 'draft' && (
+                        <p className="text-[10px] text-[#999] mt-4 uppercase tracking-widest">
+                          {pagesWithContent} of {currentIssuePages.length} pages ready
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Bottom */}
+                    <div className="text-center">
+                      <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
+                        {currentIssue.status === 'draft' 
+                          ? (daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : 'Due today')
+                          : 'Published'
+                        }
+                      </p>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Spine effect */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent" />
+                </div>
               </motion.div>
 
               {/* Issue Details */}
               <div className="flex flex-col justify-center">
-                <div className="inline-flex items-center gap-2 mb-4">
-                  {currentIssue.status === 'draft' && (
-                    <span className="px-3 py-1 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 rounded-full text-violet-300 text-xs font-medium">
-                      🎨 Creating Issue {currentIssue.issue_number}
-                    </span>
-                  )}
-                </div>
+                <p className="text-white/40 text-sm uppercase tracking-widest mb-3">
+                  {currentIssue.status === 'draft' ? 'Now Editing' : 'Latest Issue'}
+                </p>
                 
-                <h1 className="text-4xl font-bold text-white mb-3">
-                  {currentIssue.status === 'draft' ? 'Issue in Progress' : `Issue ${currentIssue.issue_number}`}
+                <h1 className="text-4xl font-serif text-white mb-2">
+                  Issue {currentIssue.issue_number}
                 </h1>
                 <p className="text-white/50 text-lg mb-8">
                   {formatMonth(currentIssue.month)}
-                  {currentIssue.status === 'draft' && daysUntilDeadline > 0 && (
-                    <span className="text-violet-400"> · {daysUntilDeadline} days left</span>
-                  )}
                 </p>
 
                 {/* Action Button */}
@@ -225,9 +199,9 @@ export default function ZineHomePage() {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="px-8 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-semibold text-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/25"
+                      className="px-8 py-4 bg-[#faf9f6] text-[#2d2d2d] rounded-sm font-medium text-lg hover:bg-white transition-colors"
                     >
-                      ✏️ Edit Your Page
+                      Edit Your Page
                     </motion.button>
                   </Link>
                 ) : (
@@ -235,46 +209,51 @@ export default function ZineHomePage() {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="px-8 py-4 bg-white text-black rounded-xl font-semibold text-lg hover:bg-white/90 transition-all"
+                      className="px-8 py-4 bg-[#faf9f6] text-[#2d2d2d] rounded-sm font-medium text-lg hover:bg-white transition-colors"
                     >
-                      📖 Read Issue
+                      Read Issue
                     </motion.button>
                   </Link>
                 )}
 
                 {/* Contributors */}
-                <div className="mt-10 pt-8 border-t border-white/10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-white/60">Contributors</h3>
+                <div className="mt-12 pt-8 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-sm text-white/50 uppercase tracking-widest">Contributors</h3>
                     {isOwner && (
                       <Link 
                         href={`/z/${zineId}/settings`}
-                        className="text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                        className="text-sm text-white/40 hover:text-white transition-colors"
                       >
-                        + Invite friends
+                        + Invite
                       </Link>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {currentIssuePages.map((page) => {
                       const hasContent = page.content?.blocks?.length > 0;
                       return (
                         <div 
                           key={page.id} 
-                          className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors ${
-                            hasContent 
-                              ? 'bg-green-500/10 border border-green-500/20' 
-                              : 'bg-white/5 border border-white/10'
-                          }`}
+                          className="flex items-center gap-2"
                         >
-                          <div 
-                            className="w-5 h-5 rounded-full"
-                            style={{ backgroundColor: page.profiles?.color || '#6366f1' }}
-                          />
-                          <span className={`text-sm ${hasContent ? 'text-green-300' : 'text-white/60'}`}>
+                          {page.profiles?.avatar_url ? (
+                            <img 
+                              src={page.profiles.avatar_url} 
+                              alt={page.profiles.name}
+                              className={`w-8 h-8 rounded-full object-cover ${hasContent ? 'ring-2 ring-green-500' : 'opacity-50'}`}
+                            />
+                          ) : (
+                            <div 
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${hasContent ? 'ring-2 ring-green-500' : 'opacity-50'}`}
+                              style={{ backgroundColor: page.profiles?.color || '#666' }}
+                            >
+                              {page.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                          )}
+                          <span className={`text-sm ${hasContent ? 'text-white' : 'text-white/40'}`}>
                             {page.profiles?.name}
                           </span>
-                          {hasContent && <span className="text-green-400 text-xs">✓</span>}
                         </div>
                       );
                     })}
@@ -287,7 +266,7 @@ export default function ZineHomePage() {
           {/* Past Issues */}
           {pastIssues.length > 0 && (
             <div>
-              <h2 className="text-lg font-medium text-white mb-6">Past Issues</h2>
+              <h2 className="text-sm text-white/50 uppercase tracking-widest mb-6">Archive</h2>
               <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
                 {pastIssues.map((issue, index) => (
                   <motion.div
@@ -299,14 +278,24 @@ export default function ZineHomePage() {
                     <Link href={`/z/${zineId}/issue/${issue.id}`}>
                       <motion.div
                         whileHover={{ y: -4 }}
-                        className="aspect-[3/4] bg-[#1a1a1a] border border-white/10 rounded-lg p-3 flex flex-col cursor-pointer hover:border-white/20 transition-colors"
+                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] p-3 flex flex-col cursor-pointer shadow-md hover:shadow-lg transition-shadow relative overflow-hidden"
                       >
-                        <span className="text-[10px] text-white/40 font-mono">
-                          #{String(issue.issue_number).padStart(2, '0')}
-                        </span>
-                        <div className="flex-1 flex items-center justify-center">
-                          <span className="text-xs text-white/60">{formatMonth(issue.month)}</span>
+                        {/* Paper texture */}
+                        <div className="absolute inset-0 opacity-30" style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                        }} />
+                        
+                        <div className="relative z-10 flex flex-col h-full">
+                          <span className="text-[8px] text-[#999] uppercase tracking-widest">
+                            Issue {issue.issue_number}
+                          </span>
+                          <div className="flex-1 flex items-center justify-center">
+                            <span className="text-xs text-[#666] font-serif">{formatMonth(issue.month)}</span>
+                          </div>
                         </div>
+                        
+                        {/* Spine */}
+                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-r from-black/10 to-transparent" />
                       </motion.div>
                     </Link>
                   </motion.div>
