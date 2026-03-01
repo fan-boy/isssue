@@ -286,12 +286,12 @@ function IssueCard({
         </span>
       </div>
 
-      {/* Magazine Cover - Smaller */}
+      {/* Magazine Cover */}
       <Link href={`/z/${zineId}/issue/${issue.id}`}>
         <motion.div 
           whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
           transition={{ duration: 0.2 }}
-          className="w-44 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden"
+          className="w-52 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden"
         >
           {issue.cover_url ? (
             <>
