@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { transitions, formatMonth, formatReleaseDate, getNextReleaseDate } from '@/lib/utils';
+import { transitions, formatMonth } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 interface ZineData {
@@ -38,6 +38,20 @@ interface MemberData {
   profiles: { id: string; name: string; color: string; avatar_url: string | null };
 }
 
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatFullDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function getDaysUntil(dateString: string): number {
+  return Math.ceil((new Date(dateString).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
 export default function ZineHomePage() {
   const params = useParams();
   const router = useRouter();
@@ -46,7 +60,7 @@ export default function ZineHomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [zine, setZine] = useState<ZineData | null>(null);
   const [issues, setIssues] = useState<IssueData[]>([]);
-  const [currentIssuePages, setCurrentIssuePages] = useState<PageData[]>([]);
+  const [draftIssuePages, setDraftIssuePages] = useState<PageData[]>([]);
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,13 +89,16 @@ export default function ZineHomePage() {
         .order('issue_number', { ascending: false });
       if (issuesData) {
         setIssues(issuesData);
-        if (issuesData.length > 0) {
+        
+        // Load pages for the draft issue (if exists)
+        const draftIssue = issuesData.find(i => i.status === 'draft');
+        if (draftIssue) {
           const { data: pagesData } = await supabase
             .from('pages')
             .select('id, user_id, content, status, profiles(name, color, avatar_url)')
-            .eq('issue_id', issuesData[0].id)
+            .eq('issue_id', draftIssue.id)
             .order('page_number', { ascending: true });
-          if (pagesData) setCurrentIssuePages(pagesData as unknown as PageData[]);
+          if (pagesData) setDraftIssuePages(pagesData as unknown as PageData[]);
         }
       }
 
@@ -101,22 +118,25 @@ export default function ZineHomePage() {
 
   if (!zine) return null;
 
-  const currentIssue = issues[0];
-  const pastIssues = issues.slice(1);
+  // Find latest published/locked issue and current draft
+  const latestPublished = issues.find(i => i.status === 'published');
+  const lockedIssue = issues.find(i => i.status === 'locked');
+  const draftIssue = issues.find(i => i.status === 'draft');
+  
+  // Archive = all published issues except the latest one shown above
+  const archiveIssues = issues.filter(i => 
+    i.status === 'published' && i.id !== latestPublished?.id
+  );
+
   const isOwner = user?.id === zine.owner_id;
-
-  const daysUntilDeadline = currentIssue ? Math.ceil(
-    (new Date(currentIssue.edit_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  ) : 0;
-
-  const pagesReady = currentIssuePages.filter(p => p.status === 'ready').length;
+  const pagesReady = draftIssuePages.filter(p => p.status === 'ready').length;
   const totalMembers = members.length;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <Link href="/dashboard" className="text-white/50 hover:text-white transition-colors flex-shrink-0">
               ←
@@ -133,214 +153,53 @@ export default function ZineHomePage() {
       </header>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transitions.easeOutQuint}
         >
-          {/* Current Issue */}
-          {currentIssue && (
-            <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8 md:gap-12 mb-16">
-              {/* Magazine Cover - Clean, editorial style */}
-              <motion.div 
-                whileHover={{ y: -8 }}
-                transition={{ duration: 0.3 }}
-                className="aspect-[3/4] relative max-w-[240px] md:max-w-none mx-auto md:mx-0"
-              >
-                <div className="absolute inset-0 rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden">
-                  {/* AI-generated cover for published issues */}
-                  {currentIssue.status === 'published' && currentIssue.cover_url ? (
-                    <>
-                      <img 
-                        src={currentIssue.cover_url} 
-                        alt={`${zine.name} Issue ${currentIssue.issue_number}`}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      {/* Title overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40" />
-                      <div className="relative h-full flex flex-col p-6">
-                        <div className="flex items-start justify-between">
-                          <span className="text-[10px] text-white/80 uppercase tracking-[0.2em]">
-                            Issue {currentIssue.issue_number}
-                          </span>
-                        </div>
-                        <div className="flex-1 flex flex-col items-center justify-start pt-4 text-center">
-                          <h2 className="text-2xl font-serif text-white tracking-wide drop-shadow-lg">
-                            {zine.name}
-                          </h2>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[9px] text-white/70 uppercase tracking-[0.15em]">
-                            {formatMonth(currentIssue.month)}
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Paper texture for draft/no cover */}
-                      <div className="absolute inset-0 opacity-40" style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                      }} />
-                      
-                      {/* Content */}
-                      <div className="relative h-full flex flex-col p-6">
-                        {/* Top */}
-                        <div className="flex items-start justify-between">
-                          <span className="text-[10px] text-[#666] uppercase tracking-[0.2em]">
-                            Issue {currentIssue.issue_number}
-                          </span>
-                          {currentIssue.status === 'draft' && (
-                            <span className="w-2 h-2 rounded-full bg-[#2d2d2d]" title="In progress" />
-                          )}
-                        </div>
-                        
-                        {/* Center */}
-                        <div className="flex-1 flex flex-col items-center justify-center text-center">
-                          <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-2">
-                            {zine.name}
-                          </h2>
-                          <p className="text-sm text-[#666]">{formatMonth(currentIssue.month)}</p>
-                          
-                          {currentIssue.status === 'draft' && (
-                            <p className="text-[10px] text-[#999] mt-4 uppercase tracking-widest">
-                              {pagesReady} of {totalMembers} pages ready
-                            </p>
-                          )}
-                        </div>
-                        
-                        {/* Bottom */}
-                        <div className="text-center">
-                          <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
-                            {currentIssue.status === 'draft' 
-                              ? `Releases ${formatReleaseDate(zine.release_day)}`
-                              : 'Published'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* Spine effect */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent" />
-                </div>
-              </motion.div>
+          {/* Current Issues - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-16">
+            {/* Latest Published or Locked Issue */}
+            {(latestPublished || lockedIssue) && (
+              <IssueCard
+                issue={latestPublished || lockedIssue!}
+                zine={zine}
+                zineId={zineId}
+                type={latestPublished ? 'published' : 'locked'}
+              />
+            )}
 
-              {/* Issue Details */}
-              <div className="flex flex-col justify-center text-center md:text-left">
-                <p className="text-white/40 text-sm uppercase tracking-widest mb-3">
-                  {currentIssue.status === 'draft' ? 'Now Editing' : 'Latest Issue'}
-                </p>
-                
-                <h1 className="text-4xl font-serif text-white mb-2">
-                  Issue {currentIssue.issue_number}
-                </h1>
-                <p className="text-white/50 text-lg mb-2">
-                  {formatMonth(currentIssue.month)}
-                </p>
-                
-                {currentIssue.status === 'draft' && (
-                  <p className="text-white/30 text-sm mb-8">
-                    Releases {formatReleaseDate(zine.release_day)} · {daysUntilDeadline > 0 ? `${daysUntilDeadline} days to edit` : 'Editing closes today'}
-                  </p>
-                )}
-                {currentIssue.status !== 'draft' && <div className="mb-8" />}
+            {/* Current Draft Issue */}
+            {draftIssue && (
+              <DraftIssueCard
+                issue={draftIssue}
+                zine={zine}
+                zineId={zineId}
+                members={members}
+                pages={draftIssuePages}
+                user={user}
+                isOwner={isOwner}
+                pagesReady={pagesReady}
+                totalMembers={totalMembers}
+              />
+            )}
 
-                {/* Action Button */}
-                <div className="flex justify-center md:justify-start">
-                {currentIssue.status === 'draft' ? (
-                  <Link href={`/z/${zineId}/issue/${currentIssue.id}/edit`}>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-8 py-4 bg-[#faf9f6] text-[#2d2d2d] rounded-sm font-medium text-lg hover:bg-white transition-colors"
-                    >
-                      Edit Your Page
-                    </motion.button>
-                  </Link>
-                ) : (
-                  <Link href={`/z/${zineId}/issue/${currentIssue.id}`}>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-8 py-4 bg-[#faf9f6] text-[#2d2d2d] rounded-sm font-medium text-lg hover:bg-white transition-colors"
-                    >
-                      Read Issue
-                    </motion.button>
-                  </Link>
-                )}
-                </div>
-
-                {/* Contributors */}
-                <div className="mt-12 pt-8 border-t border-white/10">
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-sm text-white/50 uppercase tracking-widest">Contributors</h3>
-                    {isOwner && (
-                      <Link 
-                        href={`/z/${zineId}/settings`}
-                        className="text-sm text-white/40 hover:text-white transition-colors"
-                      >
-                        + Invite
-                      </Link>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    {members.map((member) => {
-                      const page = currentIssuePages.find(p => p.user_id === member.user_id);
-                      const isReady = page?.status === 'ready';
-                      const hasContent = (page?.content?.blocks?.length ?? 0) > 0;
-                      const isMe = member.user_id === user?.id;
-                      
-                      return (
-                        <div 
-                          key={member.user_id} 
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            {member.profiles?.avatar_url ? (
-                              <img 
-                                src={member.profiles.avatar_url} 
-                                alt={member.profiles.name}
-                                className={`w-8 h-8 rounded-full object-cover ${isReady ? 'ring-2 ring-green-500' : ''}`}
-                              />
-                            ) : (
-                              <div 
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${isReady ? 'ring-2 ring-green-500' : ''}`}
-                                style={{ backgroundColor: member.profiles?.color || '#666' }}
-                              >
-                                {member.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
-                              </div>
-                            )}
-                            <span className="text-sm text-white">
-                              {member.profiles?.name} {isMe && <span className="text-white/40">(you)</span>}
-                            </span>
-                          </div>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            isReady 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : hasContent 
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-white/5 text-white/40'
-                          }`}>
-                            {isReady ? 'Ready' : hasContent ? 'Editing' : 'Not started'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+            {/* If only one issue exists (no published yet, only draft) */}
+            {!latestPublished && !lockedIssue && draftIssue && (
+              <div className="hidden md:flex items-center justify-center border border-dashed border-white/10 rounded-xl">
+                <p className="text-white/30 text-sm">First issue coming soon!</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Past Issues */}
-          {pastIssues.length > 0 && (
+          {/* Archive */}
+          {archiveIssues.length > 0 && (
             <div>
               <h2 className="text-sm text-white/50 uppercase tracking-widest mb-6">Archive</h2>
               <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                {pastIssues.map((issue, index) => (
+                {archiveIssues.map((issue, index) => (
                   <motion.div
                     key={issue.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -354,13 +213,11 @@ export default function ZineHomePage() {
                       >
                         {issue.cover_url ? (
                           <>
-                            {/* Cover image */}
                             <img 
                               src={issue.cover_url} 
                               alt={`Issue ${issue.issue_number}`}
                               className="absolute inset-0 w-full h-full object-cover"
                             />
-                            {/* Overlay for text readability */}
                             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" />
                             <div className="relative z-10 flex flex-col h-full p-3">
                               <span className="text-[8px] text-white/80 uppercase tracking-widest">
@@ -372,11 +229,9 @@ export default function ZineHomePage() {
                           </>
                         ) : (
                           <>
-                            {/* Paper texture fallback */}
                             <div className="absolute inset-0 opacity-30" style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
                             }} />
-                            
                             <div className="relative z-10 flex flex-col h-full p-3">
                               <span className="text-[8px] text-[#999] uppercase tracking-widest">
                                 Issue {issue.issue_number}
@@ -387,8 +242,6 @@ export default function ZineHomePage() {
                             </div>
                           </>
                         )}
-                        
-                        {/* Spine */}
                         <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-r from-black/10 to-transparent" />
                       </motion.div>
                     </Link>
@@ -400,5 +253,218 @@ export default function ZineHomePage() {
         </motion.div>
       </div>
     </main>
+  );
+}
+
+// Published/Locked Issue Card
+function IssueCard({ 
+  issue, 
+  zine, 
+  zineId, 
+  type 
+}: { 
+  issue: IssueData; 
+  zine: ZineData; 
+  zineId: string; 
+  type: 'published' | 'locked';
+}) {
+  const isPublished = type === 'published';
+  
+  return (
+    <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
+      <div className="p-5 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+            isPublished 
+              ? 'bg-green-500/20 text-green-400' 
+              : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {isPublished ? '✓ Published' : '🔒 Locked'}
+          </span>
+          <span className="text-xs text-white/40">
+            {isPublished ? `Released ${formatDate(issue.release_date)}` : `Releases ${formatDate(issue.release_date)}`}
+          </span>
+        </div>
+        
+        <h3 className="text-xl font-serif text-white mb-1">Issue {issue.issue_number}</h3>
+        <p className="text-white/50 text-sm">{formatMonth(issue.month)}</p>
+      </div>
+
+      {/* Cover Preview */}
+      <div className="px-5">
+        <Link href={`/z/${zineId}/issue/${issue.id}`}>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="aspect-[4/3] rounded-lg overflow-hidden relative cursor-pointer"
+          >
+            {issue.cover_url ? (
+              <>
+                <img 
+                  src={issue.cover_url} 
+                  alt={`${zine.name} Issue ${issue.issue_number}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-white font-serif text-lg drop-shadow-lg">{zine.name}</p>
+                </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-[#faf9f6] flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-[#666] font-serif text-lg">{zine.name}</p>
+                  <p className="text-[#999] text-xs mt-1">{formatMonth(issue.month)}</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </Link>
+      </div>
+
+      {/* Action */}
+      <div className="p-5 pt-4">
+        <Link href={`/z/${zineId}/issue/${issue.id}`}>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full py-3 rounded-lg font-medium transition-colors ${
+              isPublished
+                ? 'bg-white text-[#0a0a0a] hover:bg-white/90'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            {isPublished ? 'Read Issue' : 'Preview'}
+          </motion.button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Draft Issue Card
+function DraftIssueCard({
+  issue,
+  zine,
+  zineId,
+  members,
+  pages,
+  user,
+  isOwner,
+  pagesReady,
+  totalMembers,
+}: {
+  issue: IssueData;
+  zine: ZineData;
+  zineId: string;
+  members: MemberData[];
+  pages: PageData[];
+  user: User | null;
+  isOwner: boolean;
+  pagesReady: number;
+  totalMembers: number;
+}) {
+  const daysUntilDeadline = getDaysUntil(issue.edit_deadline);
+  const daysUntilRelease = getDaysUntil(issue.release_date);
+
+  return (
+    <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
+      <div className="p-5 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400">
+            ✎ Now Editing
+          </span>
+          <span className="text-xs text-white/40">
+            {pagesReady} of {totalMembers} ready
+          </span>
+        </div>
+        
+        <h3 className="text-xl font-serif text-white mb-1">Issue {issue.issue_number}</h3>
+        <p className="text-white/50 text-sm">{formatMonth(issue.month)}</p>
+      </div>
+
+      {/* Timeline Info */}
+      <div className="px-5 py-3 bg-white/5 border-y border-white/5">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Edit Deadline</p>
+            <p className="text-white font-medium">{formatDate(issue.edit_deadline)}</p>
+            <p className="text-white/50 text-xs">
+              {daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : daysUntilDeadline === 0 ? 'Today!' : 'Passed'}
+            </p>
+          </div>
+          <div>
+            <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Release Date</p>
+            <p className="text-white font-medium">{formatDate(issue.release_date)}</p>
+            <p className="text-white/50 text-xs">{daysUntilRelease} days</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contributors */}
+      <div className="px-5 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-white/40 uppercase tracking-wider">Contributors</p>
+          {isOwner && (
+            <Link 
+              href={`/z/${zineId}/settings`}
+              className="text-xs text-white/40 hover:text-white transition-colors"
+            >
+              + Invite
+            </Link>
+          )}
+        </div>
+        <div className="space-y-2">
+          {members.slice(0, 4).map((member) => {
+            const page = pages.find(p => p.user_id === member.user_id);
+            const isReady = page?.status === 'ready';
+            const hasContent = (page?.content?.blocks?.length ?? 0) > 0;
+            const isMe = member.user_id === user?.id;
+            
+            return (
+              <div key={member.user_id} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {member.profiles?.avatar_url ? (
+                    <img 
+                      src={member.profiles.avatar_url} 
+                      alt={member.profiles.name}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div 
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
+                      style={{ backgroundColor: member.profiles?.color || '#666' }}
+                    >
+                      {member.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                  )}
+                  <span className="text-sm text-white/80">
+                    {member.profiles?.name} {isMe && <span className="text-white/40">(you)</span>}
+                  </span>
+                </div>
+                <span className={`w-2 h-2 rounded-full ${
+                  isReady ? 'bg-green-500' : hasContent ? 'bg-yellow-500' : 'bg-white/20'
+                }`} />
+              </div>
+            );
+          })}
+          {members.length > 4 && (
+            <p className="text-xs text-white/40">+{members.length - 4} more</p>
+          )}
+        </div>
+      </div>
+
+      {/* Action */}
+      <div className="p-5 pt-0">
+        <Link href={`/z/${zineId}/issue/${issue.id}/edit`}>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3 bg-white text-[#0a0a0a] rounded-lg font-medium hover:bg-white/90 transition-colors"
+          >
+            Edit Your Page
+          </motion.button>
+        </Link>
+      </div>
+    </div>
   );
 }
