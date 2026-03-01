@@ -65,6 +65,18 @@ export async function GET(request: Request) {
         }
       }
 
+      // Check if user has completed their profile (has a name set)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', sessionData.user.id)
+        .single();
+
+      // If no name set, redirect to profile onboarding
+      if (!profile?.name) {
+        return NextResponse.redirect(`${origin}/profile?onboarding=true`);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
