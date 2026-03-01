@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,7 @@ interface Profile {
   name: string;
   email: string;
   color: string;
+  avatar_url: string | null;
 }
 
 interface Friend {
@@ -19,6 +20,7 @@ interface Friend {
   name: string;
   email: string;
   color: string;
+  avatar_url: string | null;
   sharedZines: number;
 }
 
@@ -31,13 +33,16 @@ const AVATAR_COLORS = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [name, setName] = useState('');
   const [color, setColor] = useState('#6366f1');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -51,7 +56,7 @@ export default function ProfilePage() {
       // Get profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, name, email, color')
+        .select('id, name, email, color, avatar_url')
         .eq('id', user.id)
         .single();
       
@@ -59,10 +64,10 @@ export default function ProfilePage() {
         setProfile(profileData);
         setName(profileData.name || '');
         setColor(profileData.color || '#6366f1');
+        setAvatarUrl(profileData.avatar_url);
       }
 
       // Get friends (people who share zines with this user)
-      // First get all zines the user is part of
       const { data: userMemberships } = await supabase
         .from('memberships')
         .select('zine_id')
@@ -71,15 +76,13 @@ export default function ProfilePage() {
       if (userMemberships && userMemberships.length > 0) {
         const zineIds = userMemberships.map(m => m.zine_id);
         
-        // Get all other members of those zines
         const { data: otherMemberships } = await supabase
           .from('memberships')
-          .select('user_id, zine_id, profiles(id, name, email, color)')
+          .select('user_id, zine_id, profiles(id, name, email, color, avatar_url)')
           .in('zine_id', zineIds)
           .neq('user_id', user.id);
 
         if (otherMemberships) {
-          // Group by user and count shared zines
           const friendMap = new Map<string, Friend>();
           for (const m of otherMemberships) {
             const p = m.profiles as unknown as Profile;
@@ -93,6 +96,7 @@ export default function ProfilePage() {
                 name: p.name || 'Unknown',
                 email: p.email || '',
                 color: p.color || '#6366f1',
+                avatar_url: p.avatar_url,
                 sharedZines: 1,
               });
             }
@@ -106,6 +110,84 @@ export default function ProfilePage() {
 
     loadData();
   }, [router]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image must be less than 5MB' });
+      return;
+    }
+
+    setUploading(true);
+    setMessage(null);
+
+    const supabase = createClient();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/avatar.${fileExt}`;
+
+    // Delete old avatar if exists
+    if (avatarUrl) {
+      const oldPath = avatarUrl.split('/').pop();
+      if (oldPath) {
+        await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
+      }
+    }
+
+    // Upload new avatar
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+
+    if (error) {
+      setMessage({ type: 'error', text: 'Failed to upload photo' });
+      setUploading(false);
+      return;
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path);
+    const newUrl = urlData.publicUrl + '?t=' + Date.now(); // Cache bust
+
+    // Update profile
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: urlData.publicUrl })
+      .eq('id', user.id);
+
+    if (updateError) {
+      setMessage({ type: 'error', text: 'Failed to update profile' });
+    } else {
+      setAvatarUrl(newUrl);
+      setMessage({ type: 'success', text: 'Photo uploaded!' });
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!user || !avatarUrl) return;
+
+    setUploading(true);
+    const supabase = createClient();
+
+    // Update profile to remove avatar
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', user.id);
+
+    setAvatarUrl(null);
+    setUploading(false);
+    setMessage({ type: 'success', text: 'Photo removed' });
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -137,6 +219,14 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
+      <input 
+        ref={fileInputRef}
+        type="file" 
+        accept="image/*" 
+        onChange={handlePhotoUpload} 
+        className="hidden" 
+      />
+
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -171,17 +261,54 @@ export default function ProfilePage() {
 
           {/* Profile Card */}
           <section className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6">
-            <div className="flex items-start gap-6 mb-8">
-              <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold"
-                style={{ backgroundColor: color }}
-              >
-                {name?.charAt(0)?.toUpperCase() || '?'}
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative group">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={name || 'Profile'} 
+                    className="w-24 h-24 rounded-full object-cover"
+                  />
+                ) : (
+                  <div 
+                    className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold"
+                    style={{ backgroundColor: color }}
+                  >
+                    {name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+                
+                {/* Upload overlay */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-sm font-medium"
+                >
+                  {uploading ? '...' : '📷'}
+                </button>
               </div>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-white mb-1">{name || 'Your Name'}</h1>
-                <p className="text-white/50">{profile?.email}</p>
+              
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="px-4 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {uploading ? 'Uploading...' : avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                </button>
+                {avatarUrl && (
+                  <button
+                    onClick={handleRemovePhoto}
+                    disabled={uploading}
+                    className="px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
+              
+              <p className="text-white/40 text-xs mt-2">Max 5MB, JPG or PNG</p>
             </div>
 
             <div className="space-y-5">
@@ -197,7 +324,9 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm text-white/60 mb-2">Avatar Color</label>
+                <label className="block text-sm text-white/60 mb-2">
+                  Avatar Color {avatarUrl && <span className="text-white/30">(used as fallback)</span>}
+                </label>
                 <div className="grid grid-cols-8 gap-2">
                   {AVATAR_COLORS.map((c) => (
                     <button
@@ -212,6 +341,16 @@ export default function ProfilePage() {
                     />
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/60 mb-2">Email</label>
+                <input
+                  type="text"
+                  value={profile?.email || ''}
+                  disabled
+                  className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-white/50 cursor-not-allowed"
+                />
               </div>
 
               <button
@@ -237,12 +376,20 @@ export default function ProfilePage() {
                     className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
                   >
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
-                        style={{ backgroundColor: friend.color }}
-                      >
-                        {friend.name?.charAt(0)?.toUpperCase() || '?'}
-                      </div>
+                      {friend.avatar_url ? (
+                        <img 
+                          src={friend.avatar_url} 
+                          alt={friend.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+                          style={{ backgroundColor: friend.color }}
+                        >
+                          {friend.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
                       <div>
                         <p className="text-white font-medium">{friend.name}</p>
                         <p className="text-sm text-white/40">{friend.email}</p>

@@ -20,7 +20,7 @@ interface Zine {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ name: string; color: string } | null>(null);
+  const [profile, setProfile] = useState<{ name: string; color: string; avatar_url: string | null } | null>(null);
   const [zines, setZines] = useState<Zine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('name, color')
+        .select('name, color, avatar_url')
         .eq('id', user.id)
         .single();
       
@@ -90,11 +90,21 @@ export default function DashboardPage() {
               Sign out
             </button>
             <Link href="/profile">
-              <div 
-                className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-white/30 transition-all"
-                style={{ backgroundColor: profile?.color || '#6366f1' }}
-                title={profile?.name || user?.email || ''}
-              />
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile?.name || 'Profile'}
+                  className="w-8 h-8 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-white/30 transition-all"
+                />
+              ) : (
+                <div 
+                  className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-white/30 transition-all flex items-center justify-center text-white text-sm font-medium"
+                  style={{ backgroundColor: profile?.color || '#6366f1' }}
+                  title={profile?.name || user?.email || ''}
+                >
+                  {profile?.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
             </Link>
           </div>
         </div>
@@ -227,6 +237,7 @@ interface Friend {
   name: string;
   email: string;
   color: string;
+  avatar_url: string | null;
 }
 
 function CreateZineModal({ 
@@ -263,7 +274,7 @@ function CreateZineModal({
         // Get all other members of those zines
         const { data: otherMemberships } = await supabase
           .from('memberships')
-          .select('user_id, profiles(id, name, email, color)')
+          .select('user_id, profiles(id, name, email, color, avatar_url)')
           .in('zine_id', zineIds)
           .neq('user_id', user.id);
 
@@ -277,6 +288,7 @@ function CreateZineModal({
                 name: p.name || 'Unknown',
                 email: p.email || '',
                 color: p.color || '#6366f1',
+                avatar_url: p.avatar_url || null,
               });
             }
           }
@@ -430,12 +442,20 @@ function CreateZineModal({
                         : 'bg-[#0a0a0a] border border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                      style={{ backgroundColor: friend.color }}
-                    >
-                      {friend.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
+                    {friend.avatar_url ? (
+                      <img 
+                        src={friend.avatar_url} 
+                        alt={friend.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                        style={{ backgroundColor: friend.color }}
+                      >
+                        {friend.name?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                    )}
                     <div className="flex-1 text-left">
                       <p className="text-white text-sm font-medium">{friend.name}</p>
                       <p className="text-white/40 text-xs">{friend.email}</p>
