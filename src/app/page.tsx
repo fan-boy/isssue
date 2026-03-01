@@ -4,141 +4,128 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { transitions } from '@/lib/utils';
 
-const floatingElements = [
-  { id: 1, rotation: -12, x: '10%', y: '15%', delay: 0 },
-  { id: 2, rotation: 8, x: '85%', y: '20%', delay: 0.1 },
-  { id: 3, rotation: -5, x: '75%', y: '70%', delay: 0.2 },
-  { id: 4, rotation: 15, x: '5%', y: '65%', delay: 0.15 },
-];
-
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f5f3eb] relative overflow-hidden">
-      {/* Paper texture overlay */}
+    <main className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
+      {/* Subtle grid */}
       <div 
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
         }}
       />
 
-      {/* Floating decorative elements */}
-      {floatingElements.map((el) => (
-        <motion.div
-          key={el.id}
-          initial={{ opacity: 0, scale: 0.8, rotate: el.rotation - 10 }}
-          animate={{ opacity: 1, scale: 1, rotate: el.rotation }}
-          transition={{ delay: el.delay + 0.3, ...transitions.easeOutQuint }}
-          className="absolute hidden md:block"
-          style={{ left: el.x, top: el.y }}
-        >
-          <FloatingSticker index={el.id} />
-        </motion.div>
-      ))}
+      {/* Floating trinkets */}
+      <Trinket type="stamp" x="8%" y="12%" rotation={-12} delay={0.3} />
+      <Trinket type="star" x="88%" y="8%" rotation={15} delay={0.4} />
+      <Trinket type="tape" x="82%" y="65%" rotation={-8} delay={0.5} />
+      <Trinket type="paperclip" x="5%" y="70%" rotation={25} delay={0.35} />
+      <Trinket type="ticket" x="90%" y="40%" rotation={-5} delay={0.45} />
+      <Trinket type="heart" x="12%" y="45%" rotation={10} delay={0.55} />
 
       {/* Main content */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-20">
-        {/* Hero section */}
+        
+        {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transitions.easeOutQuint}
           className="text-center max-w-3xl"
         >
-          {/* Tape decoration */}
+          {/* Handwritten label */}
           <motion.div
-            initial={{ opacity: 0, rotate: -15, scale: 0.8 }}
-            animate={{ opacity: 1, rotate: -12, scale: 1 }}
-            transition={{ delay: 0.2, ...transitions.easeOutQuint }}
-            className="inline-block mb-6"
+            initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
+            animate={{ opacity: 1, scale: 1, rotate: -2 }}
+            transition={{ delay: 0.15, ...transitions.easeOutQuint }}
+            className="inline-block mb-8"
           >
-            <div className="bg-[#f0e6a0]/80 px-6 py-2 text-sm font-medium text-[#5a5200] tracking-wide uppercase transform -rotate-2">
-              Coming Soon
-            </div>
+            <span className="text-sm text-white/40 font-mono tracking-widest uppercase">
+              A collaborative magazine
+            </span>
           </motion.div>
 
-          {/* Main headline - collage style */}
-          <h1 className="relative mb-8">
+          {/* Logo / Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, ...transitions.easeOutQuint }}
+            className="relative mb-6"
+          >
+            <span className="text-8xl md:text-[12rem] font-serif text-white leading-[0.85] tracking-tight">
+              isssue
+            </span>
+            {/* Decorative elements around title */}
             <motion.span
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1, ...transitions.easeOutQuint }}
-              className="block text-7xl md:text-9xl font-serif text-[#2d2d2d] leading-[0.85]"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+              className="absolute -right-2 md:-right-6 -top-2 md:-top-4 text-2xl md:text-4xl"
             >
-              Zine
+              ✳︎
             </motion.span>
             <motion.span
-              initial={{ opacity: 0, rotate: 5 }}
-              animate={{ opacity: 1, rotate: 3 }}
-              transition={{ delay: 0.2, ...transitions.easeOutQuint }}
-              className="absolute -right-4 md:-right-8 top-0 text-2xl md:text-3xl font-hand text-[#e57373] transform rotate-3"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+              className="absolute -left-4 md:-left-8 bottom-4 text-xl md:text-2xl text-white/20"
             >
               ✦
             </motion.span>
-          </h1>
+          </motion.h1>
 
-          {/* Subheadline */}
+          {/* Tagline */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, ...transitions.easeOutQuint }}
-            className="text-xl md:text-2xl text-[#5a5a5a] mb-6 leading-relaxed font-light"
+            transition={{ delay: 0.25, ...transitions.easeOutQuint }}
+            className="text-lg md:text-xl text-white/50 mb-10 leading-relaxed max-w-md mx-auto"
           >
-            A monthly collaborative zine where
-            <br />
-            <span className="font-serif italic">friends each get a page</span>
+            Friends each get a page. Nobody sees the others until release day.
           </motion.p>
 
-          {/* Feature pills */}
+          {/* Feature tags */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, ...transitions.easeOutQuint }}
-            className="flex flex-wrap justify-center gap-3 mb-12"
+            transition={{ delay: 0.35, ...transitions.easeOutQuint }}
+            className="flex flex-wrap justify-center gap-2 mb-12"
           >
-            <FeaturePill rotation={-2}>Create together</FeaturePill>
-            <FeaturePill rotation={1}>Reveal together</FeaturePill>
-            <FeaturePill rotation={-1}>Annotate & react</FeaturePill>
+            <Tag>Monthly drops</Tag>
+            <Tag>Up to 10 friends</Tag>
+            <Tag>Collaborative chaos</Tag>
           </motion.div>
 
           {/* CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, ...transitions.easeOutQuint }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            transition={{ delay: 0.45, ...transitions.easeOutQuint }}
           >
             <Link href="/login">
-              <motion.button
-                whileHover={{ scale: 1.03, rotate: -1 }}
-                whileTap={{ scale: 0.98 }}
-                transition={transitions.snap}
-                className="px-8 py-4 bg-[#2d2d2d] text-white rounded-full text-lg font-medium hover:bg-[#1a1a1a] transition-colors shadow-lg"
-              >
-                Start Your Zine
-              </motion.button>
-            </Link>
-            <Link href="/dashboard">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 transition={transitions.snap}
-                className="px-6 py-3 text-[#5a5a5a] hover:text-[#2d2d2d] text-lg transition-colors"
+                className="group relative px-8 py-4 bg-white text-black rounded-full text-lg font-medium hover:bg-white/90 transition-colors"
               >
-                View Demo →
+                Start your isssue
+                <span className="ml-2 inline-block group-hover:translate-x-1 transition-transform">→</span>
               </motion.button>
             </Link>
           </motion.div>
         </motion.div>
 
-        {/* Preview section */}
+        {/* Preview cards */}
         <motion.div
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, ...transitions.easeOutQuint }}
-          className="mt-20 w-full max-w-4xl"
+          className="mt-24 w-full max-w-3xl"
         >
-          <ZinePreview />
+          <IsssuePreview />
         </motion.div>
 
         {/* How it works */}
@@ -148,146 +135,206 @@ export default function Home() {
           transition={{ delay: 0.8, ...transitions.easeOutQuint }}
           className="mt-32 w-full max-w-4xl"
         >
-          <h2 className="text-center text-sm uppercase tracking-widest text-[#8a8a8a] mb-12">
-            How it works
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <HowItWorksCard
+          <div className="flex items-center justify-center gap-4 mb-16">
+            <div className="h-px w-12 bg-white/10" />
+            <h2 className="text-sm uppercase tracking-widest text-white/30">
+              How it works
+            </h2>
+            <div className="h-px w-12 bg-white/10" />
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <StepCard
               number="01"
               title="Gather your crew"
-              description="Invite up to 9 friends. Each person gets their own page in the monthly issue."
-              rotation={-2}
+              description="Invite your closest friends. Each person claims a page in the monthly issue."
+              icon="👥"
               delay={0.9}
             />
-            <HowItWorksCard
+            <StepCard
               number="02"
               title="Create in secret"
-              description="Design your page with photos, text, and stickers. No peeking at others' pages."
-              rotation={1}
+              description="Fill your page with photos, thoughts, doodles. No peeking at others."
+              icon="✏️"
               delay={1}
             />
-            <HowItWorksCard
+            <StepCard
               number="03"
-              title="Reveal & react"
-              description="On release day, flip through everyone's pages. Highlight, annotate, and react."
-              rotation={-1}
+              title="Reveal together"
+              description="First of the month, the issue drops. Flip through, react, annotate."
+              icon="🎉"
               delay={1.1}
             />
           </div>
         </motion.div>
 
-        {/* Footer */}
-        <motion.footer
+        {/* Bottom decoration */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, ...transitions.easeOutQuint }}
-          className="mt-32 text-center text-sm text-[#aaa]"
+          className="mt-32 flex items-center gap-3 text-white/20"
         >
-          <p>Magazine nostalgia meets modern web</p>
-        </motion.footer>
+          <span>✦</span>
+          <span className="text-sm">Made for friends who miss magazines</span>
+          <span>✦</span>
+        </motion.div>
       </div>
     </main>
   );
 }
 
-function FeaturePill({ children, rotation }: { children: React.ReactNode; rotation: number }) {
+function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span 
-      className="px-4 py-2 bg-white border border-[#e0ddd5] rounded-full text-sm text-[#5a5a5a] shadow-sm"
-      style={{ transform: `rotate(${rotation}deg)` }}
-    >
+    <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-sm text-white/60">
       {children}
     </span>
   );
 }
 
-function FloatingSticker({ index }: { index: number }) {
-  const stickers = [
-    // Star burst
-    <div key="star" className="w-16 h-16 text-4xl flex items-center justify-center bg-[#fff8e1] rounded-full shadow-md border border-[#f0e6a0]">
-      ✦
-    </div>,
-    // Scribble circle
-    <div key="circle" className="w-20 h-20 rounded-full border-2 border-dashed border-[#e57373]/40" />,
-    // Tape piece
-    <div key="tape" className="w-24 h-8 bg-[#d4edda]/60 transform -rotate-12" />,
-    // Arrow
-    <div key="arrow" className="text-3xl text-[#64b5f6]/50">→</div>,
-  ];
-  return stickers[(index - 1) % stickers.length];
+function Trinket({ 
+  type, 
+  x, 
+  y, 
+  rotation, 
+  delay 
+}: { 
+  type: 'stamp' | 'star' | 'tape' | 'paperclip' | 'ticket' | 'heart';
+  x: string;
+  y: string;
+  rotation: number;
+  delay: number;
+}) {
+  const trinkets = {
+    stamp: (
+      <div className="w-14 h-14 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center">
+        <span className="text-white/30 text-xs font-mono">2026</span>
+      </div>
+    ),
+    star: (
+      <div className="text-3xl text-amber-400/40">✳︎</div>
+    ),
+    tape: (
+      <div className="w-20 h-6 bg-amber-200/20 rounded-sm" />
+    ),
+    paperclip: (
+      <div className="text-2xl text-white/20">📎</div>
+    ),
+    ticket: (
+      <div className="w-8 h-16 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center">
+        <span className="text-white/20 text-[8px] font-mono rotate-90">ADMIT ONE</span>
+      </div>
+    ),
+    heart: (
+      <div className="text-2xl text-rose-400/30">♥</div>
+    ),
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8, rotate: rotation - 15 }}
+      animate={{ opacity: 1, scale: 1, rotate: rotation }}
+      transition={{ delay, ...transitions.easeOutQuint }}
+      className="absolute hidden md:block pointer-events-none"
+      style={{ left: x, top: y }}
+    >
+      {trinkets[type]}
+    </motion.div>
+  );
 }
 
-function ZinePreview() {
-  const previewPages = [
-    { color: '#e57373', name: 'Adi', rotation: -6, zIndex: 3 },
-    { color: '#64b5f6', name: 'Maya', rotation: 4, zIndex: 2 },
-    { color: '#81c784', name: 'Jordan', rotation: -2, zIndex: 1 },
+function IsssuePreview() {
+  const pages = [
+    { color: '#f87171', initial: 'A', rotation: -8, offset: -100 },
+    { color: '#60a5fa', initial: 'M', rotation: 3, offset: 0 },
+    { color: '#4ade80', initial: 'J', rotation: -4, offset: 100 },
   ];
 
   return (
-    <div className="relative h-80 md:h-96 flex items-center justify-center">
-      {previewPages.map((page, index) => (
+    <div className="relative h-72 md:h-80 flex items-center justify-center">
+      {pages.map((page, index) => (
         <motion.div
-          key={page.name}
-          initial={{ opacity: 0, y: 40, rotate: page.rotation + 10 }}
+          key={page.initial}
+          initial={{ opacity: 0, y: 50, rotate: page.rotation + 15 }}
           animate={{ opacity: 1, y: 0, rotate: page.rotation }}
-          transition={{ delay: 0.7 + index * 0.1, ...transitions.easeOutQuint }}
-          whileHover={{ scale: 1.05, rotate: page.rotation / 2, zIndex: 10 }}
-          className="absolute w-48 md:w-64 aspect-[3/4] bg-white rounded-lg shadow-xl cursor-pointer overflow-hidden"
+          transition={{ delay: 0.65 + index * 0.08, ...transitions.easeOutQuint }}
+          whileHover={{ 
+            scale: 1.05, 
+            rotate: 0, 
+            zIndex: 10,
+            transition: { duration: 0.2 }
+          }}
+          className="absolute w-40 md:w-52 aspect-[3/4] bg-[#1a1a1a] border border-white/10 rounded-lg shadow-2xl cursor-pointer overflow-hidden"
           style={{ 
-            zIndex: page.zIndex,
-            transform: `rotate(${page.rotation}deg) translateX(${(index - 1) * 80}px)`,
+            zIndex: 3 - index,
+            transform: `translateX(${page.offset}px) rotate(${page.rotation}deg)`,
           }}
         >
-          {/* Page content mock */}
           <div className="h-full p-4 flex flex-col">
-            <div className="flex-1 bg-[#f8f7f4] rounded-md mb-3 flex items-center justify-center">
-              <div className="text-4xl opacity-20">📷</div>
+            {/* Image placeholder */}
+            <div className="flex-1 bg-white/5 rounded mb-3 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                <span className="text-white/30">📷</span>
+              </div>
             </div>
+            {/* Text lines */}
             <div className="space-y-2">
-              <div className="h-2 bg-[#e0ddd5] rounded w-3/4" />
-              <div className="h-2 bg-[#e0ddd5] rounded w-1/2" />
+              <div className="h-1.5 bg-white/10 rounded w-3/4" />
+              <div className="h-1.5 bg-white/10 rounded w-1/2" />
             </div>
-            {/* Author indicator */}
+            {/* Author */}
             <div className="mt-3 flex items-center gap-2">
               <div 
-                className="w-4 h-4 rounded-full"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white"
                 style={{ backgroundColor: page.color }}
-              />
-              <span className="text-xs text-[#8a8a8a]">{page.name}</span>
+              >
+                {page.initial}
+              </div>
+              <div className="h-1 bg-white/10 rounded w-12" />
             </div>
           </div>
         </motion.div>
       ))}
+      
+      {/* Decorative elements */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="absolute -bottom-8 text-white/20 text-sm"
+      >
+        ↑ hover to peek
+      </motion.div>
     </div>
   );
 }
 
-function HowItWorksCard({ 
+function StepCard({ 
   number, 
   title, 
   description, 
-  rotation, 
+  icon,
   delay 
 }: { 
   number: string;
   title: string;
   description: string;
-  rotation: number;
+  icon: string;
   delay: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, rotate: rotation * 2 }}
-      animate={{ opacity: 1, y: 0, rotate: rotation }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay, ...transitions.easeOutQuint }}
-      whileHover={{ scale: 1.02, rotate: 0 }}
-      className="bg-white border border-[#e0ddd5] rounded-xl p-6 shadow-sm cursor-default"
-      style={{ transform: `rotate(${rotation}deg)` }}
+      className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-white/10 transition-colors"
     >
-      <div className="text-4xl font-serif text-[#e0ddd5] mb-3">{number}</div>
-      <h3 className="text-lg font-medium text-[#2d2d2d] mb-2">{title}</h3>
-      <p className="text-sm text-[#8a8a8a] leading-relaxed">{description}</p>
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-3xl">{icon}</span>
+        <span className="text-xs font-mono text-white/20">{number}</span>
+      </div>
+      <h3 className="text-lg font-medium text-white mb-2">{title}</h3>
+      <p className="text-sm text-white/40 leading-relaxed">{description}</p>
     </motion.div>
   );
 }
