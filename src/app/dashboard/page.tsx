@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { transitions, formatReleaseDate } from '@/lib/utils';
+import { Onboarding, useOnboarding } from '@/components/Onboarding';
 import type { User } from '@supabase/supabase-js';
 
 interface Zine {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [zines, setZines] = useState<Zine[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { needsOnboarding, completeOnboarding } = useOnboarding();
 
   useEffect(() => {
     const supabase = createClient();
@@ -74,13 +76,17 @@ export default function DashboardPage() {
     );
   }
 
+  if (needsOnboarding) {
+    return <Onboarding onComplete={completeOnboarding} />;
+  }
+
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold text-white">
-            Zine
+            isssue
           </Link>
           <div className="flex items-center gap-3 md:gap-4">
             <button
@@ -118,7 +124,7 @@ export default function DashboardPage() {
           transition={transitions.easeOutQuint}
         >
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-semibold text-white">Your Zines</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold text-white">Your isssues</h1>
             <motion.button
               onClick={() => setShowCreateModal(true)}
               whileHover={{ scale: 1.02 }}
@@ -241,15 +247,15 @@ export default function DashboardPage() {
           ) : (
             <div className="text-center py-20">
               <div className="text-6xl mb-6">📖</div>
-              <h2 className="text-xl font-medium text-white mb-2">No zines yet</h2>
-              <p className="text-white/50 mb-8">Create your first zine and invite friends</p>
+              <h2 className="text-xl font-medium text-white mb-2">No isssues yet</h2>
+              <p className="text-white/50 mb-8">Create your first isssue and invite friends</p>
               <motion.button
                 onClick={() => setShowCreateModal(true)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="px-6 py-3 bg-white text-black rounded-lg font-medium"
               >
-                Create Zine
+                Create isssue
               </motion.button>
             </div>
           )}
@@ -429,7 +435,7 @@ function CreateZineModal({
         animate={{ opacity: 1, scale: 1 }}
         className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="text-xl font-semibold text-white mb-6">Create a Zine</h2>
+        <h2 className="text-xl font-semibold text-white mb-6">Create an isssue</h2>
         
         <form onSubmit={handleCreate} className="space-y-5">
           <div>
