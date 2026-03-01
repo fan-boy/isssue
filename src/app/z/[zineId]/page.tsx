@@ -350,21 +350,43 @@ export default function ZineHomePage() {
                     <Link href={`/z/${zineId}/issue/${issue.id}`}>
                       <motion.div
                         whileHover={{ y: -4 }}
-                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] p-3 flex flex-col cursor-pointer shadow-md hover:shadow-lg transition-shadow relative overflow-hidden"
+                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] cursor-pointer shadow-md hover:shadow-lg transition-shadow relative overflow-hidden"
                       >
-                        {/* Paper texture */}
-                        <div className="absolute inset-0 opacity-30" style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                        }} />
-                        
-                        <div className="relative z-10 flex flex-col h-full">
-                          <span className="text-[8px] text-[#999] uppercase tracking-widest">
-                            Issue {issue.issue_number}
-                          </span>
-                          <div className="flex-1 flex items-center justify-center">
-                            <span className="text-xs text-[#666] font-serif">{formatMonth(issue.month)}</span>
-                          </div>
-                        </div>
+                        {issue.cover_url ? (
+                          <>
+                            {/* Cover image */}
+                            <img 
+                              src={issue.cover_url} 
+                              alt={`Issue ${issue.issue_number}`}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            {/* Overlay for text readability */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" />
+                            <div className="relative z-10 flex flex-col h-full p-3">
+                              <span className="text-[8px] text-white/80 uppercase tracking-widest">
+                                Issue {issue.issue_number}
+                              </span>
+                              <div className="flex-1" />
+                              <span className="text-xs text-white/90 font-serif text-center">{formatMonth(issue.month)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Paper texture fallback */}
+                            <div className="absolute inset-0 opacity-30" style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                            }} />
+                            
+                            <div className="relative z-10 flex flex-col h-full p-3">
+                              <span className="text-[8px] text-[#999] uppercase tracking-widest">
+                                Issue {issue.issue_number}
+                              </span>
+                              <div className="flex-1 flex items-center justify-center">
+                                <span className="text-xs text-[#666] font-serif">{formatMonth(issue.month)}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                         
                         {/* Spine */}
                         <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-r from-black/10 to-transparent" />
