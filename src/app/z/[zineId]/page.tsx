@@ -22,6 +22,7 @@ interface IssueData {
   status: 'draft' | 'locked' | 'published';
   edit_deadline: string;
   release_date: string;
+  cover_url: string | null;
 }
 
 interface PageData {
@@ -133,47 +134,79 @@ export default function ZineHomePage() {
                 className="aspect-[3/4] relative"
               >
                 <div className="absolute inset-0 rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden">
-                  {/* Paper texture */}
-                  <div className="absolute inset-0 opacity-40" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                  }} />
-                  
-                  {/* Content */}
-                  <div className="relative h-full flex flex-col p-6">
-                    {/* Top */}
-                    <div className="flex items-start justify-between">
-                      <span className="text-[10px] text-[#666] uppercase tracking-[0.2em]">
-                        Issue {currentIssue.issue_number}
-                      </span>
-                      {currentIssue.status === 'draft' && (
-                        <span className="w-2 h-2 rounded-full bg-[#2d2d2d]" title="In progress" />
-                      )}
-                    </div>
-                    
-                    {/* Center */}
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-2">
-                        {zine.name}
-                      </h2>
-                      <p className="text-sm text-[#666]">{formatMonth(currentIssue.month)}</p>
+                  {/* AI-generated cover for published issues */}
+                  {currentIssue.status === 'published' && currentIssue.cover_url ? (
+                    <>
+                      <img 
+                        src={currentIssue.cover_url} 
+                        alt={`${zine.name} Issue ${currentIssue.issue_number}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      {/* Title overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40" />
+                      <div className="relative h-full flex flex-col p-6">
+                        <div className="flex items-start justify-between">
+                          <span className="text-[10px] text-white/80 uppercase tracking-[0.2em]">
+                            Issue {currentIssue.issue_number}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex flex-col items-center justify-start pt-4 text-center">
+                          <h2 className="text-2xl font-serif text-white tracking-wide drop-shadow-lg">
+                            {zine.name}
+                          </h2>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[9px] text-white/70 uppercase tracking-[0.15em]">
+                            {formatMonth(currentIssue.month)}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Paper texture for draft/no cover */}
+                      <div className="absolute inset-0 opacity-40" style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                      }} />
                       
-                      {currentIssue.status === 'draft' && (
-                        <p className="text-[10px] text-[#999] mt-4 uppercase tracking-widest">
-                          {pagesWithContent} of {currentIssuePages.length} pages ready
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* Bottom */}
-                    <div className="text-center">
-                      <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
-                        {currentIssue.status === 'draft' 
-                          ? `Releases ${formatReleaseDate(zine.release_day)}`
-                          : 'Published'
-                        }
-                      </p>
-                    </div>
-                  </div>
+                      {/* Content */}
+                      <div className="relative h-full flex flex-col p-6">
+                        {/* Top */}
+                        <div className="flex items-start justify-between">
+                          <span className="text-[10px] text-[#666] uppercase tracking-[0.2em]">
+                            Issue {currentIssue.issue_number}
+                          </span>
+                          {currentIssue.status === 'draft' && (
+                            <span className="w-2 h-2 rounded-full bg-[#2d2d2d]" title="In progress" />
+                          )}
+                        </div>
+                        
+                        {/* Center */}
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                          <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-2">
+                            {zine.name}
+                          </h2>
+                          <p className="text-sm text-[#666]">{formatMonth(currentIssue.month)}</p>
+                          
+                          {currentIssue.status === 'draft' && (
+                            <p className="text-[10px] text-[#999] mt-4 uppercase tracking-widest">
+                              {pagesWithContent} of {currentIssuePages.length} pages ready
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* Bottom */}
+                        <div className="text-center">
+                          <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
+                            {currentIssue.status === 'draft' 
+                              ? `Releases ${formatReleaseDate(zine.release_day)}`
+                              : 'Published'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   {/* Spine effect */}
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent" />

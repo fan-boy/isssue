@@ -14,6 +14,14 @@ interface ZineData {
   owner_id: string;
 }
 
+interface IssueData {
+  id: string;
+  issue_number: number;
+  status: 'draft' | 'locked' | 'published';
+  month: string;
+  cover_url: string | null;
+}
+
 interface MemberData {
   id: string;
   user_id: string;
@@ -28,6 +36,7 @@ export default function ZineSettingsPage() {
   
   const [userId, setUserId] = useState<string | null>(null);
   const [zine, setZine] = useState<ZineData | null>(null);
+  const [currentIssue, setCurrentIssue] = useState<IssueData | null>(null);
   const [members, setMembers] = useState<MemberData[]>([]);
   const [zineName, setZineName] = useState('');
   const [releaseDay, setReleaseDay] = useState(1);
@@ -35,6 +44,7 @@ export default function ZineSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -58,6 +68,16 @@ export default function ZineSettingsPage() {
         .select('id, user_id, role, profiles(id, name, email, color)')
         .eq('zine_id', zineId);
       if (membersData) setMembers(membersData as unknown as MemberData[]);
+
+      // Get current issue
+      const { data: issueData } = await supabase
+        .from('issues')
+        .select('id, issue_number, status, month, cover_url')
+        .eq('zine_id', zineId)
+        .order('issue_number', { ascending: false })
+        .limit(1)
+        .single();
+      if (issueData) setCurrentIssue(issueData);
 
       setLoading(false);
     }
@@ -128,6 +148,54 @@ export default function ZineSettingsPage() {
     const supabase = createClient();
     await supabase.from('memberships').delete().eq('id', memberId);
     setMembers(members.filter(m => m.id !== memberId));
+  };
+
+  const handlePublish = async () => {
+    if (!currentIssue || currentIssue.status !== 'draft') return;
+    if (!confirm('Publish this issue? Everyone will be able to read it and a cover will be generated.')) return;
+    
+    setPublishing(true);
+    setMessage(null);
+
+    const supabase = createClient();
+
+    // Update status to published
+    const { error: statusError } = await supabase
+      .from('issues')
+      .update({ status: 'published' })
+      .eq('id', currentIssue.id);
+
+    if (statusError) {
+      setMessage({ type: 'error', text: 'Failed to publish issue' });
+      setPublishing(false);
+      return;
+    }
+
+    // Generate cover
+    setMessage({ type: 'success', text: 'Published! Generating cover...' });
+
+    try {
+      const response = await fetch('/api/generate-cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issueId: currentIssue.id }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCurrentIssue({ ...currentIssue, status: 'published', cover_url: data.coverUrl });
+        setMessage({ type: 'success', text: 'Published with AI-generated cover!' });
+      } else {
+        setCurrentIssue({ ...currentIssue, status: 'published' });
+        setMessage({ type: 'success', text: 'Published! (Cover generation failed: ' + data.error + ')' });
+      }
+    } catch {
+      setCurrentIssue({ ...currentIssue, status: 'published' });
+      setMessage({ type: 'success', text: 'Published! (Cover generation failed)' });
+    }
+
+    setPublishing(false);
   };
 
   const handleDeleteZine = async () => {
@@ -288,6 +356,53 @@ export default function ZineSettingsPage() {
               ))}
             </div>
           </section>
+
+          {/* Current Issue */}
+          {isOwner && currentIssue && (
+            <section className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6">
+              <h2 className="text-lg font-medium text-white mb-2">Current Issue</h2>
+              <p className="text-sm text-white/50 mb-6">
+                Issue {currentIssue.issue_number} · {currentIssue.status === 'draft' ? 'In Progress' : 'Published'}
+              </p>
+              
+              {currentIssue.status === 'draft' ? (
+                <div>
+                  <p className="text-sm text-white/40 mb-4">
+                    Publishing will lock the issue for editing and generate an AI cover based on the content.
+                  </p>
+                  <motion.button
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-5 py-2.5 bg-white text-black rounded-lg font-medium disabled:opacity-50"
+                  >
+                    {publishing ? 'Publishing...' : 'Publish Issue'}
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  {currentIssue.cover_url ? (
+                    <img 
+                      src={currentIssue.cover_url} 
+                      alt="Cover" 
+                      className="w-20 h-28 object-cover rounded shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-20 h-28 bg-white/5 rounded flex items-center justify-center text-white/30 text-xs">
+                      No cover
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-green-400 text-sm font-medium">✓ Published</p>
+                    <p className="text-white/40 text-xs mt-1">
+                      {currentIssue.cover_url ? 'AI cover generated' : 'No cover'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Danger Zone */}
           {isOwner && (

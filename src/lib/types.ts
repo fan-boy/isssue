@@ -33,6 +33,7 @@ export interface Issue {
   edit_deadline: string;
   release_date: string;
   created_at: string;
+  cover_url?: string | null; // AI-generated cover
 }
 
 export interface Page {
