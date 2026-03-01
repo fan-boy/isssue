@@ -272,110 +272,71 @@ function IssueCard({
   
   return (
     <div className="flex flex-col">
-      {/* Status Badge */}
-      <div className="flex items-center justify-between mb-4">
-        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+      {/* Status + Date */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
           isPublished 
             ? 'bg-green-500/20 text-green-400' 
             : 'bg-amber-500/20 text-amber-400'
         }`}>
-          {isPublished ? '✓ Published' : '🔒 Locked'}
+          {isPublished ? 'Published' : 'Locked'}
         </span>
         <span className="text-xs text-white/40">
-          {isPublished ? `Released ${formatDate(issue.release_date)}` : `Releases ${formatDate(issue.release_date)}`}
+          {formatDate(issue.release_date)}
         </span>
       </div>
 
-      {/* Magazine Cover */}
+      {/* Magazine Cover - Smaller */}
       <Link href={`/z/${zineId}/issue/${issue.id}`}>
         <motion.div 
-          whileHover={{ y: -8 }}
-          transition={{ duration: 0.3 }}
-          className="aspect-[3/4] relative cursor-pointer"
+          whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
+          transition={{ duration: 0.2 }}
+          className="w-44 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden"
         >
-          <div className="absolute inset-0 rounded-sm bg-[#faf9f6] shadow-xl overflow-hidden">
-            {issue.cover_url ? (
-              <>
-                <img 
-                  src={issue.cover_url} 
-                  alt={`${zine.name} Issue ${issue.issue_number}`}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                {/* Title overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/40" />
-                <div className="relative h-full flex flex-col p-6">
-                  <div className="flex items-start justify-between">
-                    <span className="text-[10px] text-white/80 uppercase tracking-[0.2em]">
-                      Issue {issue.issue_number}
-                    </span>
-                  </div>
-                  <div className="flex-1 flex flex-col items-center justify-start pt-4 text-center">
-                    <h2 className="text-2xl font-serif text-white tracking-wide drop-shadow-lg">
-                      {zine.name}
-                    </h2>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[9px] text-white/70 uppercase tracking-[0.15em]">
-                      {formatMonth(issue.month)}
-                    </p>
-                  </div>
+          {issue.cover_url ? (
+            <>
+              <img 
+                src={issue.cover_url} 
+                alt={`${zine.name} Issue ${issue.issue_number}`}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" />
+              <div className="relative h-full flex flex-col p-4">
+                <span className="text-[9px] text-white/70 uppercase tracking-[0.15em]">
+                  Issue {issue.issue_number}
+                </span>
+                <div className="flex-1 flex items-start justify-center pt-2">
+                  <h2 className="text-lg font-serif text-white tracking-wide drop-shadow-lg text-center">
+                    {zine.name}
+                  </h2>
                 </div>
-              </>
-            ) : (
-              <>
-                {/* Paper texture for no cover */}
-                <div className="absolute inset-0 opacity-40" style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                }} />
-                
-                <div className="relative h-full flex flex-col p-6">
-                  <div className="flex items-start justify-between">
-                    <span className="text-[10px] text-[#666] uppercase tracking-[0.2em]">
-                      Issue {issue.issue_number}
-                    </span>
-                    {!isPublished && (
-                      <span className="w-2 h-2 rounded-full bg-amber-500" title="Locked" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col items-center justify-center text-center">
-                    <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-2">
-                      {zine.name}
-                    </h2>
-                    <p className="text-sm text-[#666]">{formatMonth(issue.month)}</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
-                      {isPublished ? 'Published' : 'Coming Soon'}
-                    </p>
-                  </div>
+                <p className="text-[8px] text-white/60 uppercase tracking-[0.1em] text-center">
+                  {formatMonth(issue.month)}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 opacity-40" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+              }} />
+              <div className="relative h-full flex flex-col p-4">
+                <span className="text-[9px] text-[#888] uppercase tracking-[0.15em]">
+                  Issue {issue.issue_number}
+                </span>
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <h2 className="text-lg font-serif text-[#2d2d2d] tracking-wide mb-1">
+                    {zine.name}
+                  </h2>
+                  <p className="text-xs text-[#666]">{formatMonth(issue.month)}</p>
                 </div>
-              </>
-            )}
-            
-            {/* Spine effect */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent" />
-          </div>
+              </div>
+            </>
+          )}
+          {/* Spine */}
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/15 to-transparent" />
         </motion.div>
       </Link>
-
-      {/* Action Button */}
-      <div className="mt-4">
-        <Link href={`/z/${zineId}/issue/${issue.id}`}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`w-full py-3 rounded-lg font-medium transition-colors ${
-              isPublished
-                ? 'bg-[#faf9f6] text-[#2d2d2d] hover:bg-white'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            {isPublished ? 'Read Issue' : 'Preview'}
-          </motion.button>
-        </Link>
-      </div>
     </div>
   );
 }
@@ -383,7 +344,6 @@ function IssueCard({
 // Draft Issue Card
 function DraftIssueCard({
   issue,
-  zine,
   zineId,
   members,
   pages,
@@ -403,107 +363,95 @@ function DraftIssueCard({
   totalMembers: number;
 }) {
   const daysUntilDeadline = getDaysUntil(issue.edit_deadline);
-  const daysUntilRelease = getDaysUntil(issue.release_date);
 
   return (
-    <div className="bg-[#141414] rounded-xl border border-white/10 overflow-hidden">
-      <div className="p-5 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400">
-            ✎ Now Editing
-          </span>
-          <span className="text-xs text-white/40">
-            {pagesReady} of {totalMembers} ready
-          </span>
-        </div>
-        
-        <h3 className="text-xl font-serif text-white mb-1">Issue {issue.issue_number}</h3>
+    <div className="flex flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-400">
+          Editing
+        </span>
+        <span className="text-xs text-white/40">
+          {pagesReady}/{totalMembers} ready
+        </span>
+      </div>
+
+      {/* Issue Info */}
+      <div className="mb-4">
+        <h3 className="text-lg font-serif text-white mb-0.5">Issue {issue.issue_number}</h3>
         <p className="text-white/50 text-sm">{formatMonth(issue.month)}</p>
       </div>
 
-      {/* Timeline Info */}
-      <div className="px-5 py-3 bg-white/5 border-y border-white/5">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Edit Deadline</p>
-            <p className="text-white font-medium">{formatDate(issue.edit_deadline)}</p>
-            <p className="text-white/50 text-xs">
-              {daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : daysUntilDeadline === 0 ? 'Today!' : 'Passed'}
-            </p>
-          </div>
-          <div>
-            <p className="text-white/40 text-xs uppercase tracking-wider mb-1">Release Date</p>
-            <p className="text-white font-medium">{formatDate(issue.release_date)}</p>
-            <p className="text-white/50 text-xs">{daysUntilRelease} days</p>
-          </div>
+      {/* Timeline */}
+      <div className="grid grid-cols-2 gap-4 mb-5">
+        <div>
+          <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Deadline</p>
+          <p className="text-sm text-white">{formatDate(issue.edit_deadline)}</p>
+          <p className="text-xs text-white/40">
+            {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : daysUntilDeadline === 0 ? 'Today!' : 'Passed'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Releases</p>
+          <p className="text-sm text-white">{formatDate(issue.release_date)}</p>
         </div>
       </div>
 
       {/* Contributors */}
-      <div className="px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-white/40 uppercase tracking-wider">Contributors</p>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] text-white/40 uppercase tracking-wider">Contributors</p>
           {isOwner && (
             <Link 
               href={`/z/${zineId}/settings`}
-              className="text-xs text-white/40 hover:text-white transition-colors"
+              className="text-[10px] text-white/30 hover:text-white transition-colors"
             >
               + Invite
             </Link>
           )}
         </div>
-        <div className="space-y-2">
-          {members.slice(0, 4).map((member) => {
+        <div className="flex items-center gap-1">
+          {members.slice(0, 5).map((member) => {
             const page = pages.find(p => p.user_id === member.user_id);
             const isReady = page?.status === 'ready';
             const hasContent = (page?.content?.blocks?.length ?? 0) > 0;
-            const isMe = member.user_id === user?.id;
             
             return (
-              <div key={member.user_id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {member.profiles?.avatar_url ? (
-                    <img 
-                      src={member.profiles.avatar_url} 
-                      alt={member.profiles.name}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
-                      style={{ backgroundColor: member.profiles?.color || '#666' }}
-                    >
-                      {member.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                  )}
-                  <span className="text-sm text-white/80">
-                    {member.profiles?.name} {isMe && <span className="text-white/40">(you)</span>}
-                  </span>
-                </div>
-                <span className={`w-2 h-2 rounded-full ${
-                  isReady ? 'bg-green-500' : hasContent ? 'bg-yellow-500' : 'bg-white/20'
-                }`} />
+              <div 
+                key={member.user_id} 
+                className={`relative ${isReady ? 'ring-2 ring-green-500 ring-offset-1 ring-offset-[#0a0a0a]' : ''} rounded-full`}
+                title={`${member.profiles?.name}${isReady ? ' (ready)' : hasContent ? ' (editing)' : ''}`}
+              >
+                {member.profiles?.avatar_url ? (
+                  <img 
+                    src={member.profiles.avatar_url} 
+                    alt={member.profiles.name}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div 
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs"
+                    style={{ backgroundColor: member.profiles?.color || '#666' }}
+                  >
+                    {member.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
               </div>
             );
           })}
-          {members.length > 4 && (
-            <p className="text-xs text-white/40">+{members.length - 4} more</p>
+          {members.length > 5 && (
+            <span className="text-xs text-white/40 ml-1">+{members.length - 5}</span>
           )}
         </div>
       </div>
 
-      {/* Action */}
-      <div className="p-5 pt-0">
-        <Link href={`/z/${zineId}/issue/${issue.id}/edit`}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3 bg-white text-[#0a0a0a] rounded-lg font-medium hover:bg-white/90 transition-colors"
-          >
-            Edit Your Page
-          </motion.button>
-        </Link>
-      </div>
+      {/* Edit Link */}
+      <Link 
+        href={`/z/${zineId}/issue/${issue.id}/edit`}
+        className="text-sm text-white/60 hover:text-white transition-colors inline-flex items-center gap-1"
+      >
+        Edit your page →
+      </Link>
     </div>
   );
 }
