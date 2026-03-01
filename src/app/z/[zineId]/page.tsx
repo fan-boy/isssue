@@ -29,7 +29,13 @@ interface PageData {
   id: string;
   user_id: string;
   content: { blocks: unknown[] };
+  status: 'draft' | 'ready';
   profiles: { name: string; color: string; avatar_url: string | null };
+}
+
+interface MemberData {
+  user_id: string;
+  profiles: { id: string; name: string; color: string; avatar_url: string | null };
 }
 
 export default function ZineHomePage() {
@@ -41,6 +47,7 @@ export default function ZineHomePage() {
   const [zine, setZine] = useState<ZineData | null>(null);
   const [issues, setIssues] = useState<IssueData[]>([]);
   const [currentIssuePages, setCurrentIssuePages] = useState<PageData[]>([]);
+  const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,6 +63,13 @@ export default function ZineHomePage() {
       if (zineError || !zineData) { router.push('/dashboard'); return; }
       setZine(zineData);
 
+      // Get all members
+      const { data: membersData } = await supabase
+        .from('memberships')
+        .select('user_id, profiles(id, name, color, avatar_url)')
+        .eq('zine_id', zineId);
+      if (membersData) setMembers(membersData as unknown as MemberData[]);
+
       const { data: issuesData } = await supabase
         .from('issues').select('*').eq('zine_id', zineId)
         .order('issue_number', { ascending: false });
@@ -64,7 +78,7 @@ export default function ZineHomePage() {
         if (issuesData.length > 0) {
           const { data: pagesData } = await supabase
             .from('pages')
-            .select('id, user_id, content, profiles(name, color, avatar_url)')
+            .select('id, user_id, content, status, profiles(name, color, avatar_url)')
             .eq('issue_id', issuesData[0].id)
             .order('page_number', { ascending: true });
           if (pagesData) setCurrentIssuePages(pagesData as unknown as PageData[]);
@@ -95,7 +109,8 @@ export default function ZineHomePage() {
     (new Date(currentIssue.edit_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   ) : 0;
 
-  const pagesWithContent = currentIssuePages.filter(p => p.content?.blocks?.length > 0).length;
+  const pagesReady = currentIssuePages.filter(p => p.status === 'ready').length;
+  const totalMembers = members.length;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a]">
@@ -190,7 +205,7 @@ export default function ZineHomePage() {
                           
                           {currentIssue.status === 'draft' && (
                             <p className="text-[10px] text-[#999] mt-4 uppercase tracking-widest">
-                              {pagesWithContent} of {currentIssuePages.length} pages ready
+                              {pagesReady} of {totalMembers} pages ready
                             </p>
                           )}
                         </div>
@@ -269,30 +284,45 @@ export default function ZineHomePage() {
                       </Link>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    {currentIssuePages.map((page) => {
-                      const hasContent = page.content?.blocks?.length > 0;
+                  <div className="space-y-3">
+                    {members.map((member) => {
+                      const page = currentIssuePages.find(p => p.user_id === member.user_id);
+                      const isReady = page?.status === 'ready';
+                      const hasContent = (page?.content?.blocks?.length ?? 0) > 0;
+                      const isMe = member.user_id === user?.id;
+                      
                       return (
                         <div 
-                          key={page.id} 
-                          className="flex items-center gap-2"
+                          key={member.user_id} 
+                          className="flex items-center justify-between"
                         >
-                          {page.profiles?.avatar_url ? (
-                            <img 
-                              src={page.profiles.avatar_url} 
-                              alt={page.profiles.name}
-                              className={`w-8 h-8 rounded-full object-cover ${hasContent ? 'ring-2 ring-green-500' : 'opacity-50'}`}
-                            />
-                          ) : (
-                            <div 
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${hasContent ? 'ring-2 ring-green-500' : 'opacity-50'}`}
-                              style={{ backgroundColor: page.profiles?.color || '#666' }}
-                            >
-                              {page.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                          )}
-                          <span className={`text-sm ${hasContent ? 'text-white' : 'text-white/40'}`}>
-                            {page.profiles?.name}
+                          <div className="flex items-center gap-3">
+                            {member.profiles?.avatar_url ? (
+                              <img 
+                                src={member.profiles.avatar_url} 
+                                alt={member.profiles.name}
+                                className={`w-8 h-8 rounded-full object-cover ${isReady ? 'ring-2 ring-green-500' : ''}`}
+                              />
+                            ) : (
+                              <div 
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${isReady ? 'ring-2 ring-green-500' : ''}`}
+                                style={{ backgroundColor: member.profiles?.color || '#666' }}
+                              >
+                                {member.profiles?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            <span className="text-sm text-white">
+                              {member.profiles?.name} {isMe && <span className="text-white/40">(you)</span>}
+                            </span>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            isReady 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : hasContent 
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : 'bg-white/5 text-white/40'
+                          }`}>
+                            {isReady ? 'Ready' : hasContent ? 'Editing' : 'Not started'}
                           </span>
                         </div>
                       );

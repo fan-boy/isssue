@@ -47,6 +47,7 @@ export default function EditPage() {
 
   const [zineName, setZineName] = useState('');
   const [pageId, setPageId] = useState<string | null>(null);
+  const [pageStatus, setPageStatus] = useState<'draft' | 'ready'>('draft');
   const [content, setContent] = useState<PageContent>(initialContent);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export default function EditPage() {
       const { data: page } = await supabase.from('pages').select('*').eq('issue_id', issueId).eq('user_id', user.id).single();
       if (page) {
         setPageId(page.id);
+        setPageStatus(page.status || 'draft');
         if (page.content && typeof page.content === 'object') {
           setContent(page.content as PageContent);
         }
@@ -177,6 +179,14 @@ export default function EditPage() {
     router.push(`/z/${zineId}`);
   };
 
+  const togglePageStatus = async () => {
+    if (!pageId) return;
+    const newStatus = pageStatus === 'draft' ? 'ready' : 'draft';
+    const supabase = createClient();
+    await supabase.from('pages').update({ status: newStatus }).eq('id', pageId);
+    setPageStatus(newStatus);
+  };
+
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
@@ -189,10 +199,20 @@ export default function EditPage() {
             <span className="text-white/30">|</span>
             <span className="text-white/80 text-sm">{zineName}</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-white/40 text-sm">
               {saving ? 'Saving...' : lastSaved ? '✓ Saved' : ''}
             </span>
+            <button 
+              onClick={togglePageStatus} 
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pageStatus === 'ready' 
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+              }`}
+            >
+              {pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}
+            </button>
             <button onClick={handleDone} className="px-5 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90">
               Done
             </button>

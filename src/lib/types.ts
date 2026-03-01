@@ -43,6 +43,7 @@ export interface Page {
   page_number: number;
   content: PageContent;
   updated_at: string;
+  status: 'draft' | 'ready';
 }
 
 export interface Annotation {
