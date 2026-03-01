@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  });
+}
 
 // Vercel Cron calls this endpoint
 export async function GET(request: NextRequest) {
@@ -18,6 +22,8 @@ export async function GET(request: NextRequest) {
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const supabase = getSupabase();
 
   try {
     const now = new Date().toISOString();
@@ -85,8 +91,12 @@ export async function GET(request: NextRequest) {
 async function generateCover(
   issueId: string, 
   zines: { name: string } | { name: string }[] | null,
-  issueNumber: number
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _issueNumber: number
 ): Promise<string | null> {
+  const supabase = getSupabase();
+  const openai = getOpenAI();
+
   try {
     const zineName = Array.isArray(zines) ? zines[0]?.name : zines?.name || 'Untitled';
 
