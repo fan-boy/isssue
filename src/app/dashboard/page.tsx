@@ -370,7 +370,7 @@ function CreateZineModal({
       .select(`
         id, name, release_day, owner_id,
         memberships(user_id),
-        issues(id, status, issue_number, month)
+        issues(id, status, issue_number, month, cover_url)
       `)
       .single();
 
