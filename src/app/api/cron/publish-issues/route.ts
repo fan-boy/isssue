@@ -152,7 +152,7 @@ async function createNextIssue(
     if (members && members.length > 0) {
       // Create pages for all members
       await supabase.from('pages').insert(
-        members.map((member, index) => ({
+        members.map((member: { user_id: string }, index: number) => ({
           issue_id: newIssue.id,
           user_id: member.user_id,
           page_number: index + 1,
