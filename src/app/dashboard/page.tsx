@@ -14,7 +14,7 @@ interface Zine {
   release_day: number;
   owner_id: string;
   memberships: { user_id: string }[];
-  issues: { id: string; status: string; issue_number: number }[];
+  issues: { id: string; status: string; issue_number: number; month: string }[];
 }
 
 export default function DashboardPage() {
@@ -29,7 +29,6 @@ export default function DashboardPage() {
     const supabase = createClient();
     
     async function loadData() {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
@@ -37,34 +36,24 @@ export default function DashboardPage() {
       }
       setUser(user);
 
-      // Get profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('name, color')
         .eq('id', user.id)
         .single();
       
-      if (profileData) {
-        setProfile(profileData);
-      }
+      if (profileData) setProfile(profileData);
 
-      // Get zines with membership and latest issue
       const { data: zinesData } = await supabase
         .from('zines')
         .select(`
-          id,
-          name,
-          release_day,
-          owner_id,
+          id, name, release_day, owner_id,
           memberships(user_id),
-          issues(id, status, issue_number)
+          issues(id, status, issue_number, month)
         `)
         .order('created_at', { ascending: false });
 
-      if (zinesData) {
-        setZines(zinesData);
-      }
-
+      if (zinesData) setZines(zinesData);
       setLoading(false);
     }
 
@@ -79,30 +68,30 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#f5f3eb] flex items-center justify-center">
-        <div className="text-[#8a8a8a]">Loading...</div>
+      <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-white/50">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f3eb]">
+    <main className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
-      <header className="border-b border-[#e0ddd5] bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-serif text-[#2d2d2d]">
+      <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="text-xl font-semibold text-white">
             Zine
           </Link>
           <div className="flex items-center gap-4">
             <button
               onClick={handleSignOut}
-              className="text-sm text-[#8a8a8a] hover:text-[#5a5a5a]"
+              className="text-sm text-white/50 hover:text-white transition-colors"
             >
               Sign out
             </button>
             <div 
               className="w-8 h-8 rounded-full"
-              style={{ backgroundColor: profile?.color || '#e57373' }}
+              style={{ backgroundColor: profile?.color || '#6366f1' }}
               title={profile?.name || user?.email || ''}
             />
           </div>
@@ -110,87 +99,105 @@ export default function DashboardPage() {
       </header>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-5xl mx-auto px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transitions.easeOutQuint}
         >
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-serif text-[#2d2d2d]">Your Zines</h1>
+          <div className="flex items-center justify-between mb-10">
+            <h1 className="text-3xl font-semibold text-white">Your Zines</h1>
             <motion.button
               onClick={() => setShowCreateModal(true)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={transitions.snap}
-              className="px-5 py-2.5 bg-[#2d2d2d] text-white rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
+              className="px-5 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"
             >
-              + Create Zine
+              + New Zine
             </motion.button>
           </div>
 
-          {/* Zine Grid */}
+          {/* Zine Grid - Magazine Cards */}
           {zines.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {zines.map((zine, index) => {
-                const latestIssue = zine.issues?.[0];
+                const latestIssue = zine.issues?.sort((a, b) => b.issue_number - a.issue_number)[0];
                 const memberCount = zine.memberships?.length || 1;
+                const isDraft = latestIssue?.status === 'draft';
                 
                 return (
                   <motion.div
                     key={zine.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, ...transitions.easeOutQuint }}
+                    transition={{ delay: index * 0.05, ...transitions.easeOutQuint }}
                   >
                     <Link href={`/z/${zine.id}`}>
-                      <div className="bg-white border border-[#e0ddd5] rounded-xl p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h2 className="text-xl font-medium text-[#2d2d2d] mb-1">
+                      <motion.div 
+                        whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                        className={`aspect-[3/4] rounded-xl p-5 flex flex-col cursor-pointer relative overflow-hidden group ${
+                          isDraft 
+                            ? '' 
+                            : 'bg-[#1a1a1a] border border-white/10 hover:border-white/25'
+                        }`}
+                      >
+                        {/* Gradient background for active drafts */}
+                        {isDraft && (
+                          <>
+                            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-xl" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/40 via-transparent to-pink-500/40 rounded-xl" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 rounded-xl" />
+                          </>
+                        )}
+                        
+                        {/* Content */}
+                        <div className="relative z-10 flex flex-col h-full">
+                          {/* Top */}
+                          <div className="flex items-start justify-between">
+                            <span className={`text-[11px] font-mono ${isDraft ? 'text-white/60' : 'text-white/40'}`}>
+                              {latestIssue ? `#${String(latestIssue.issue_number).padStart(2, '0')}` : 'NEW'}
+                            </span>
+                            {isDraft && (
+                              <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
+                                ✨ Active
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Center */}
+                          <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            {isDraft && <span className="text-2xl mb-2">🎨</span>}
+                            <h2 className="text-lg font-semibold text-white mb-1">
                               {zine.name}
                             </h2>
-                            <p className="text-sm text-[#8a8a8a]">
-                              {memberCount} member{memberCount !== 1 ? 's' : ''}
-                              {latestIssue && ` · Issue #${latestIssue.issue_number}`}
-                            </p>
+                            {zine.owner_id === user?.id && (
+                              <span className={`text-[11px] ${isDraft ? 'text-white/50' : 'text-white/30'}`}>Owner</span>
+                            )}
                           </div>
-                          {latestIssue && (
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              latestIssue.status === 'draft' 
-                                ? 'bg-amber-100 text-amber-700'
-                                : latestIssue.status === 'locked'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              {latestIssue.status === 'draft' ? 'Editing' : 
-                               latestIssue.status === 'locked' ? 'Locked' : 'Published'}
-                            </div>
-                          )}
+                          
+                          {/* Bottom */}
+                          <div className={`flex items-end justify-between text-[11px] ${isDraft ? 'text-white/60' : 'text-white/40'}`}>
+                            <span>{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
+                            <span>Day {zine.release_day}</span>
+                          </div>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-[#f0ede5] text-sm text-[#8a8a8a]">
-                          Releases on the {zine.release_day}
-                          {zine.release_day === 1 ? 'st' : 
-                           zine.release_day === 2 ? 'nd' : 
-                           zine.release_day === 3 ? 'rd' : 'th'} of each month
-                        </div>
-                      </div>
+                      </motion.div>
                     </Link>
                   </motion.div>
                 );
               })}
             </div>
           ) : (
-            /* Empty State */
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">📖</div>
-              <h2 className="text-xl font-medium text-[#2d2d2d] mb-2">No zines yet</h2>
-              <p className="text-[#8a8a8a] mb-6">Create your first zine and invite some friends</p>
+            <div className="text-center py-20">
+              <div className="text-6xl mb-6">📖</div>
+              <h2 className="text-xl font-medium text-white mb-2">No zines yet</h2>
+              <p className="text-white/50 mb-8">Create your first zine and invite friends</p>
               <motion.button
                 onClick={() => setShowCreateModal(true)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-6 py-3 bg-[#2d2d2d] text-white rounded-full font-medium"
+                className="px-6 py-3 bg-white text-black rounded-lg font-medium"
               >
                 Create Zine
               </motion.button>
@@ -239,21 +246,13 @@ function CreateZineModal({
       return;
     }
 
-    // Create the zine
     const { data: zine, error: createError } = await supabase
       .from('zines')
-      .insert({
-        name,
-        owner_id: user.id,
-        release_day: releaseDay,
-      })
+      .insert({ name, owner_id: user.id, release_day: releaseDay })
       .select(`
-        id,
-        name,
-        release_day,
-        owner_id,
+        id, name, release_day, owner_id,
         memberships(user_id),
-        issues(id, status, issue_number)
+        issues(id, status, issue_number, month)
       `)
       .single();
 
@@ -263,53 +262,51 @@ function CreateZineModal({
       return;
     }
 
-    // Create the first issue
     const now = new Date();
     const releaseDate = new Date(now.getFullYear(), now.getMonth() + 1, releaseDay);
     const editDeadline = new Date(releaseDate);
     editDeadline.setDate(editDeadline.getDate() - 1);
 
-    await supabase
-      .from('issues')
-      .insert({
-        zine_id: zine.id,
-        issue_number: 1,
-        month: `${releaseDate.getFullYear()}-${String(releaseDate.getMonth() + 1).padStart(2, '0')}`,
-        edit_deadline: editDeadline.toISOString(),
-        release_date: releaseDate.toISOString(),
-      });
+    await supabase.from('issues').insert({
+      zine_id: zine.id,
+      issue_number: 1,
+      month: `${releaseDate.getFullYear()}-${String(releaseDate.getMonth() + 1).padStart(2, '0')}`,
+      edit_deadline: editDeadline.toISOString(),
+      release_date: releaseDate.toISOString(),
+    });
 
     onCreated(zine);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-xl p-6 w-full max-w-md"
+        className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-md"
       >
-        <h2 className="text-xl font-medium text-[#2d2d2d] mb-4">Create a Zine</h2>
+        <h2 className="text-xl font-semibold text-white mb-6">Create a Zine</h2>
         
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={handleCreate} className="space-y-5">
           <div>
-            <label className="block text-sm text-[#5a5a5a] mb-1">Name</label>
+            <label className="block text-sm text-white/60 mb-2">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Studio Friends"
               required
-              className="w-full px-4 py-2 bg-[#f5f3eb] border border-[#e0ddd5] rounded-lg text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#2d2d2d]"
+              autoFocus
+              className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
             />
           </div>
           
           <div>
-            <label className="block text-sm text-[#5a5a5a] mb-1">Release Day</label>
+            <label className="block text-sm text-white/60 mb-2">Release Day</label>
             <select
               value={releaseDay}
               onChange={(e) => setReleaseDay(parseInt(e.target.value))}
-              className="w-full px-4 py-2 bg-[#f5f3eb] border border-[#e0ddd5] rounded-lg text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#2d2d2d]"
+              className="w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/30"
             >
               {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
                 <option key={day} value={day}>
@@ -319,22 +316,20 @@ function CreateZineModal({
             </select>
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-[#e0ddd5] rounded-lg text-[#5a5a5a] hover:bg-[#f5f3eb] transition-colors"
+              className="flex-1 px-4 py-3 border border-white/10 rounded-lg text-white/70 hover:bg-white/5 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !name}
-              className="flex-1 px-4 py-2 bg-[#2d2d2d] text-white rounded-lg font-medium disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create'}
             </button>
