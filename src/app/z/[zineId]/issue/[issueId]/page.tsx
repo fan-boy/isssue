@@ -438,6 +438,43 @@ function ContentPage({
 
 // Block Renderer
 function BlockRenderer({ block }: { block: Block }) {
+  // Render image with frame
+  const renderImage = (imageBlock: Block & { type: 'image' }) => {
+    const frame = imageBlock.frame || 'polaroid';
+    const { width = 200, height = 250 } = imageBlock.size || {};
+    
+    const frameStyles: Record<string, { container: string; inner: string }> = {
+      none: { container: '', inner: 'rounded' },
+      polaroid: { container: 'bg-white p-1.5 sm:p-2 pb-4 sm:pb-6 shadow-lg rounded', inner: '' },
+      rounded: { container: 'shadow-lg', inner: 'rounded-xl' },
+      film: { container: 'bg-[#1a1a1a] p-1 shadow-lg', inner: 'border-2 border-[#333]' },
+      torn: { container: 'bg-white p-1.5 sm:p-2 shadow-lg', inner: 'border-4 border-white' },
+    };
+    
+    const style = frameStyles[frame] || frameStyles.polaroid;
+    const needsWidth = frame === 'polaroid' || frame === 'torn';
+    
+    return (
+      <div className={style.container} style={needsWidth ? { width: width + 16 } : undefined}>
+        {imageBlock.src ? (
+          <img
+            src={imageBlock.src}
+            alt=""
+            className={`object-cover ${style.inner}`}
+            style={{ width, height }}
+          />
+        ) : (
+          <div
+            className={`bg-gray-100 flex items-center justify-center text-gray-400 ${style.inner}`}
+            style={{ width, height }}
+          >
+            🖼
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div
       className="absolute"
@@ -455,37 +492,21 @@ function BlockRenderer({ block }: { block: Block }) {
             color: block.color,
             fontSize: FONT_SIZES[block.size] || FONT_SIZES.md,
             fontFamily: FONT_FAMILIES[block.style] || FONT_FAMILIES.sans,
+            textAlign: block.align || 'left',
           }}
         >
           {block.content}
         </div>
       )}
-      {block.type === 'image' && (
+      {block.type === 'image' && renderImage(block)}
+      {block.type === 'sticker' && (
         <div 
-          className="bg-white p-1.5 sm:p-2 pb-4 sm:pb-6 shadow-lg rounded" 
-          style={{ width: (block.size?.width || 200) + 16 }}
+          style={{ 
+            fontSize: `${3 * (block.scale || 1)}rem`,
+            lineHeight: 1,
+          }}
         >
-          {block.src ? (
-            <img 
-              src={block.src} 
-              alt="" 
-              className="object-cover"
-              style={{ 
-                width: block.size?.width || 200, 
-                height: block.size?.height || 250 
-              }} 
-            />
-          ) : (
-            <div 
-              className="bg-gray-100 flex items-center justify-center text-gray-400"
-              style={{ 
-                width: block.size?.width || 200, 
-                height: block.size?.height || 250 
-              }}
-            >
-              🖼
-            </div>
-          )}
+          {block.stickerId}
         </div>
       )}
     </div>

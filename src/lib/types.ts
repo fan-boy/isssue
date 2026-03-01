@@ -5,7 +5,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url: string | null;
-  color: string; // hex color for annotations
+  color: string;
   created_at: string;
 }
 
@@ -14,7 +14,7 @@ export interface Zine {
   name: string;
   owner_id: string;
   created_at: string;
-  release_day: number; // 1-28
+  release_day: number;
 }
 
 export interface Membership {
@@ -28,12 +28,12 @@ export interface Issue {
   id: string;
   zine_id: string;
   issue_number: number;
-  month: string; // "2026-03"
+  month: string;
   status: 'draft' | 'locked' | 'published';
   edit_deadline: string;
   release_date: string;
   created_at: string;
-  cover_url?: string | null; // AI-generated cover
+  cover_url?: string | null;
 }
 
 export interface Page {
@@ -51,12 +51,12 @@ export interface Annotation {
   page_id: string;
   user_id: string;
   type: 'highlight' | 'pen';
-  path_data: string; // SVG path or point array
+  path_data: string;
   color: string;
   created_at: string;
 }
 
-// Page Content Structure (stored as JSONB)
+// Page Content Structure
 export interface PageContent {
   blocks: Block[];
   background: Background;
@@ -76,7 +76,7 @@ export interface ImageBlock extends BaseBlock {
   src: string;
   size: { width: number; height: number };
   filter?: 'none' | 'bw' | 'warm' | 'faded';
-  frame?: 'none' | 'polaroid';
+  frame?: 'none' | 'polaroid' | 'rounded' | 'film' | 'torn';
 }
 
 export interface TextBlock extends BaseBlock {
@@ -85,6 +85,7 @@ export interface TextBlock extends BaseBlock {
   style: 'sans' | 'serif' | 'handwritten' | 'typewriter';
   size: 'sm' | 'md' | 'lg' | 'xl';
   color: string;
+  align?: 'left' | 'center' | 'right';
 }
 
 export interface StickerBlock extends BaseBlock {
@@ -119,12 +120,37 @@ export const TEXT_SIZES = {
 
 // Background palette options
 export const BACKGROUND_COLORS = [
-  '#f5f3eb', // warm white
+  '#FFFFFF', // white
   '#faf8f5', // cream
+  '#f5f3eb', // warm white
   '#e8e4dc', // kraft
   '#f0e6d3', // parchment
   '#e6ebe7', // sage tint
   '#e8e6ef', // lavender tint
   '#f5e6e0', // blush
   '#2d2d2d', // dark
+  '#1a1a1a', // darker
 ] as const;
+
+// Image frame styles
+export const IMAGE_FRAMES = [
+  { key: 'polaroid', label: 'Polaroid', icon: '🖼' },
+  { key: 'none', label: 'None', icon: '⬜' },
+  { key: 'rounded', label: 'Rounded', icon: '⬜' },
+  { key: 'film', label: 'Film', icon: '🎞' },
+  { key: 'torn', label: 'Torn', icon: '📄' },
+] as const;
+
+// Sticker categories
+export const STICKERS = {
+  emotions: ['😊', '😂', '🥹', '😍', '🤩', '😎', '🥳', '😴', '🤔', '😅'],
+  gestures: ['👍', '👎', '👏', '🙌', '🤝', '✌️', '🤞', '👋', '💪', '🫶'],
+  hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💕', '💖'],
+  nature: ['🌸', '🌺', '🌻', '🌷', '🌹', '🍀', '🌿', '🍃', '⭐', '✨'],
+  objects: ['📸', '🎨', '🎭', '🎪', '🎯', '🎲', '🎸', '🎹', '📚', '✏️'],
+  food: ['☕', '🍕', '🍔', '🍦', '🧁', '🍪', '🍩', '🥐', '🍷', '🍸'],
+  weather: ['☀️', '🌙', '⭐', '🌈', '☁️', '🌧', '❄️', '🔥', '💫', '🌊'],
+  symbols: ['💯', '💢', '💥', '💫', '💬', '💭', '🔮', '🎀', '🏷', '📌'],
+} as const;
+
+export type StickerCategory = keyof typeof STICKERS;
