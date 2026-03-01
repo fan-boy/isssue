@@ -89,11 +89,13 @@ export default function DashboardPage() {
             >
               Sign out
             </button>
-            <div 
-              className="w-8 h-8 rounded-full"
-              style={{ backgroundColor: profile?.color || '#6366f1' }}
-              title={profile?.name || user?.email || ''}
-            />
+            <Link href="/profile">
+              <div 
+                className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 hover:ring-white/30 transition-all"
+                style={{ backgroundColor: profile?.color || '#6366f1' }}
+                title={profile?.name || user?.email || ''}
+              />
+            </Link>
           </div>
         </div>
       </header>
@@ -220,6 +222,13 @@ export default function DashboardPage() {
   );
 }
 
+interface Friend {
+  id: string;
+  name: string;
+  email: string;
+  color: string;
+}
+
 function CreateZineModal({ 
   onClose, 
   onCreated 
@@ -229,8 +238,67 @@ function CreateZineModal({
 }) {
   const [name, setName] = useState('');
   const [releaseDay, setReleaseDay] = useState(1);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Load friends on mount
+  useEffect(() => {
+    async function loadFriends() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get all zines the user is part of
+      const { data: userMemberships } = await supabase
+        .from('memberships')
+        .select('zine_id')
+        .eq('user_id', user.id);
+
+      if (userMemberships && userMemberships.length > 0) {
+        const zineIds = userMemberships.map(m => m.zine_id);
+        
+        // Get all other members of those zines
+        const { data: otherMemberships } = await supabase
+          .from('memberships')
+          .select('user_id, profiles(id, name, email, color)')
+          .in('zine_id', zineIds)
+          .neq('user_id', user.id);
+
+        if (otherMemberships) {
+          const friendMap = new Map<string, Friend>();
+          for (const m of otherMemberships) {
+            const p = m.profiles as unknown as Friend;
+            if (p && !friendMap.has(p.id)) {
+              friendMap.set(p.id, {
+                id: p.id,
+                name: p.name || 'Unknown',
+                email: p.email || '',
+                color: p.color || '#6366f1',
+              });
+            }
+          }
+          setFriends(Array.from(friendMap.values()));
+        }
+      }
+      setLoadingFriends(false);
+    }
+    loadFriends();
+  }, []);
+
+  const toggleFriend = (id: string) => {
+    setSelectedFriends(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,18 +330,44 @@ function CreateZineModal({
       return;
     }
 
+    // Create first issue
     const now = new Date();
     const releaseDate = new Date(now.getFullYear(), now.getMonth() + 1, releaseDay);
     const editDeadline = new Date(releaseDate);
     editDeadline.setDate(editDeadline.getDate() - 1);
 
-    await supabase.from('issues').insert({
+    const { data: issue } = await supabase.from('issues').insert({
       zine_id: zine.id,
       issue_number: 1,
       month: `${releaseDate.getFullYear()}-${String(releaseDate.getMonth() + 1).padStart(2, '0')}`,
       edit_deadline: editDeadline.toISOString(),
       release_date: releaseDate.toISOString(),
-    });
+    }).select().single();
+
+    // Invite selected friends
+    if (selectedFriends.size > 0 && issue) {
+      const friendIds = Array.from(selectedFriends);
+      
+      // Add memberships for friends
+      await supabase.from('memberships').insert(
+        friendIds.map(userId => ({
+          zine_id: zine.id,
+          user_id: userId,
+          role: 'member',
+        }))
+      );
+
+      // Create pages for friends in the first issue
+      const existingMembers = [user.id, ...friendIds];
+      await supabase.from('pages').insert(
+        existingMembers.map((userId, index) => ({
+          issue_id: issue.id,
+          user_id: userId,
+          page_number: index + 1,
+          content: { blocks: [], background: { type: 'color', value: '#FFFFFF' } },
+        }))
+      );
+    }
 
     onCreated(zine);
   };
@@ -283,7 +377,7 @@ function CreateZineModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-md"
+        className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         <h2 className="text-xl font-semibold text-white mb-6">Create a Zine</h2>
         
@@ -314,6 +408,49 @@ function CreateZineModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Friends to invite */}
+          <div>
+            <label className="block text-sm text-white/60 mb-2">
+              Invite Friends {selectedFriends.size > 0 && `(${selectedFriends.size} selected)`}
+            </label>
+            {loadingFriends ? (
+              <div className="text-white/40 text-sm py-4 text-center">Loading friends...</div>
+            ) : friends.length > 0 ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {friends.map((friend) => (
+                  <button
+                    key={friend.id}
+                    type="button"
+                    onClick={() => toggleFriend(friend.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      selectedFriends.has(friend.id)
+                        ? 'bg-violet-500/20 border border-violet-500/40'
+                        : 'bg-[#0a0a0a] border border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                      style={{ backgroundColor: friend.color }}
+                    >
+                      {friend.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-white text-sm font-medium">{friend.name}</p>
+                      <p className="text-white/40 text-xs">{friend.email}</p>
+                    </div>
+                    {selectedFriends.has(friend.id) && (
+                      <span className="text-violet-400">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-white/40 text-sm py-4 text-center bg-[#0a0a0a] rounded-lg border border-white/10">
+                No friends yet — invite them after creating!
+              </div>
+            )}
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
