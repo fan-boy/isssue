@@ -14,7 +14,7 @@ interface Zine {
   release_day: number;
   owner_id: string;
   memberships: { user_id: string }[];
-  issues: { id: string; status: string; issue_number: number; month: string }[];
+  issues: { id: string; status: string; issue_number: number; month: string; cover_url: string | null }[];
 }
 
 export default function DashboardPage() {
@@ -49,7 +49,7 @@ export default function DashboardPage() {
         .select(`
           id, name, release_day, owner_id,
           memberships(user_id),
-          issues(id, status, issue_number, month)
+          issues(id, status, issue_number, month, cover_url)
         `)
         .order('created_at', { ascending: false });
 
@@ -134,7 +134,10 @@ export default function DashboardPage() {
           {zines.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {zines.map((zine, index) => {
-                const latestIssue = zine.issues?.sort((a, b) => b.issue_number - a.issue_number)[0];
+                const sortedIssues = zine.issues?.sort((a, b) => b.issue_number - a.issue_number) || [];
+                const latestIssue = sortedIssues[0];
+                const latestPublished = sortedIssues.find(i => i.status === 'published');
+                const coverUrl = latestPublished?.cover_url;
                 const memberCount = zine.memberships?.length || 1;
                 const isDraft = latestIssue?.status === 'draft';
                 
@@ -148,41 +151,84 @@ export default function DashboardPage() {
                     <Link href={`/z/${zine.id}`}>
                       <motion.div 
                         whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] p-5 flex flex-col cursor-pointer relative overflow-hidden group shadow-md hover:shadow-xl transition-shadow"
+                        className="aspect-[3/4] rounded-sm bg-[#faf9f6] cursor-pointer relative overflow-hidden group shadow-md hover:shadow-xl transition-shadow"
                       >
-                        {/* Paper texture overlay */}
-                        <div className="absolute inset-0 opacity-30" style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-                        }} />
-                        
-                        {/* Content */}
-                        <div className="relative z-10 flex flex-col h-full">
-                          {/* Top line */}
-                          <div className="flex items-start justify-between text-[#2d2d2d]">
-                            <span className="text-[10px] font-light tracking-widest uppercase">
-                              {latestIssue ? `Issue ${latestIssue.issue_number}` : 'New'}
-                            </span>
-                            {isDraft && (
-                              <span className="w-2 h-2 rounded-full bg-[#2d2d2d] animate-pulse" title="In progress" />
-                            )}
-                          </div>
-                          
-                          {/* Center - Magazine title */}
-                          <div className="flex-1 flex flex-col items-center justify-center text-center">
-                            <h2 className="text-xl font-serif text-[#2d2d2d] tracking-wide">
-                              {zine.name}
-                            </h2>
-                            {zine.owner_id === user?.id && (
-                              <span className="text-[9px] text-[#999] mt-1 uppercase tracking-widest">Owner</span>
-                            )}
-                          </div>
-                          
-                          {/* Bottom */}
-                          <div className="flex items-end justify-between text-[9px] text-[#999] uppercase tracking-wider">
-                            <span>{memberCount} contributor{memberCount !== 1 ? 's' : ''}</span>
-                            <span>Releases {formatReleaseDate(zine.release_day)}</span>
-                          </div>
-                        </div>
+                        {coverUrl ? (
+                          <>
+                            {/* Cover image */}
+                            <img 
+                              src={coverUrl} 
+                              alt={zine.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/40" />
+                            
+                            {/* Content overlay */}
+                            <div className="relative z-10 flex flex-col h-full p-5">
+                              {/* Top line */}
+                              <div className="flex items-start justify-between">
+                                <span className="text-[10px] text-white/80 font-light tracking-widest uppercase">
+                                  {latestIssue ? `Issue ${latestIssue.issue_number}` : 'New'}
+                                </span>
+                                {isDraft && (
+                                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" title="New issue in progress" />
+                                )}
+                              </div>
+                              
+                              {/* Center - Magazine title */}
+                              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                                <h2 className="text-xl font-serif text-white tracking-wide drop-shadow-lg">
+                                  {zine.name}
+                                </h2>
+                                {zine.owner_id === user?.id && (
+                                  <span className="text-[9px] text-white/60 mt-1 uppercase tracking-widest">Owner</span>
+                                )}
+                              </div>
+                              
+                              {/* Bottom */}
+                              <div className="flex items-end justify-between text-[9px] text-white/60 uppercase tracking-wider">
+                                <span>{memberCount} contributor{memberCount !== 1 ? 's' : ''}</span>
+                                <span>Releases {formatReleaseDate(zine.release_day)}</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Paper texture overlay */}
+                            <div className="absolute inset-0 opacity-30" style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+                            }} />
+                            
+                            {/* Content */}
+                            <div className="relative z-10 flex flex-col h-full p-5">
+                              {/* Top line */}
+                              <div className="flex items-start justify-between text-[#2d2d2d]">
+                                <span className="text-[10px] font-light tracking-widest uppercase">
+                                  {latestIssue ? `Issue ${latestIssue.issue_number}` : 'New'}
+                                </span>
+                                {isDraft && (
+                                  <span className="w-2 h-2 rounded-full bg-[#2d2d2d] animate-pulse" title="In progress" />
+                                )}
+                              </div>
+                              
+                              {/* Center - Magazine title */}
+                              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                                <h2 className="text-xl font-serif text-[#2d2d2d] tracking-wide">
+                                  {zine.name}
+                                </h2>
+                                {zine.owner_id === user?.id && (
+                                  <span className="text-[9px] text-[#999] mt-1 uppercase tracking-widest">Owner</span>
+                                )}
+                              </div>
+                              
+                              {/* Bottom */}
+                              <div className="flex items-end justify-between text-[9px] text-[#999] uppercase tracking-wider">
+                                <span>{memberCount} contributor{memberCount !== 1 ? 's' : ''}</span>
+                                <span>Releases {formatReleaseDate(zine.release_day)}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
                         
                         {/* Spine effect */}
                         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/10 to-transparent" />
