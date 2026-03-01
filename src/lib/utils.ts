@@ -91,3 +91,28 @@ export function generateUserColor(): string {
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
+
+// Calculate next release date from release_day (1-28)
+export function getNextReleaseDate(releaseDay: number): Date {
+  const now = new Date();
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), releaseDay);
+  
+  if (thisMonth > now) {
+    return thisMonth;
+  }
+  // Next month
+  return new Date(now.getFullYear(), now.getMonth() + 1, releaseDay);
+}
+
+// Format relative release date (e.g., "Mar 15" or "in 3 days")
+export function formatReleaseDate(releaseDay: number): string {
+  const releaseDate = getNextReleaseDate(releaseDay);
+  const now = new Date();
+  const diffDays = Math.ceil((releaseDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays <= 7) return `in ${diffDays} days`;
+  
+  return releaseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { transitions } from '@/lib/utils';
+import { transitions, formatReleaseDate } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 interface Zine {
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                           {/* Bottom */}
                           <div className="flex items-end justify-between text-[9px] text-[#999] uppercase tracking-wider">
                             <span>{memberCount} contributor{memberCount !== 1 ? 's' : ''}</span>
-                            <span>Monthly</span>
+                            <span>Releases {formatReleaseDate(zine.release_day)}</span>
                           </div>
                         </div>
                         

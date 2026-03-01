@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { transitions, formatMonth } from '@/lib/utils';
+import { transitions, formatMonth, formatReleaseDate, getNextReleaseDate } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
 interface ZineData {
@@ -168,7 +168,7 @@ export default function ZineHomePage() {
                     <div className="text-center">
                       <p className="text-[9px] text-[#999] uppercase tracking-[0.15em]">
                         {currentIssue.status === 'draft' 
-                          ? (daysUntilDeadline > 0 ? `${daysUntilDeadline} days left` : 'Due today')
+                          ? `Releases ${formatReleaseDate(zine.release_day)}`
                           : 'Published'
                         }
                       </p>
@@ -189,9 +189,16 @@ export default function ZineHomePage() {
                 <h1 className="text-4xl font-serif text-white mb-2">
                   Issue {currentIssue.issue_number}
                 </h1>
-                <p className="text-white/50 text-lg mb-8">
+                <p className="text-white/50 text-lg mb-2">
                   {formatMonth(currentIssue.month)}
                 </p>
+                
+                {currentIssue.status === 'draft' && (
+                  <p className="text-white/30 text-sm mb-8">
+                    Releases {formatReleaseDate(zine.release_day)} · {daysUntilDeadline > 0 ? `${daysUntilDeadline} days to edit` : 'Editing closes today'}
+                  </p>
+                )}
+                {currentIssue.status !== 'draft' && <div className="mb-8" />}
 
                 {/* Action Button */}
                 {currentIssue.status === 'draft' ? (
