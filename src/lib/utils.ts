@@ -11,7 +11,7 @@ export const transitions = {
   // Ease-out-quint - use for most UI interactions
   easeOutQuint: {
     type: 'tween' as const,
-    ease: [0.23, 1, 0.32, 1],
+    ease: [0.23, 1, 0.32, 1] as [number, number, number, number],
     duration: 0.4,
   },
 
