@@ -729,12 +729,28 @@ function BlockComponent({
   const [localText, setLocalText] = useState(block.type === 'text' ? block.content : '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
+  const justFinishedEditingRef = useRef(false);
 
+  // Sync local text with block content (for undo/redo), but skip when we just finished editing
   useEffect(() => {
-    if (block.type === 'text' && !isEditing) {
-      setLocalText(block.content);
+    if (block.type === 'text') {
+      console.log('[SYNC EFFECT]', {
+        blockContent: block.content,
+        localText,
+        isEditing,
+        justFinished: justFinishedEditingRef.current
+      });
+      if (justFinishedEditingRef.current) {
+        console.log('[SYNC] Skipping - just finished editing');
+        justFinishedEditingRef.current = false;
+        return;
+      }
+      if (!isEditing) {
+        console.log('[SYNC] Setting localText to:', block.content);
+        setLocalText(block.content);
+      }
     }
-  }, [block.type === 'text' ? block.content : '', isEditing]);
+  }, [block.type === 'text' ? block.content : '', isEditing, block.type]);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -778,8 +794,11 @@ function BlockComponent({
   }, [isDragging, dragStart, canvasRef, onUpdate]);
 
   const handleTextBlur = () => {
+    console.log('[BLUR] localText:', localText, 'block.content:', block.type === 'text' ? block.content : 'N/A');
     if (block.type === 'text') {
+      console.log('[BLUR] Calling onUpdate with:', localText);
       onUpdate({ content: localText });
+      justFinishedEditingRef.current = true;
     }
     onStopEdit();
   };
@@ -865,7 +884,7 @@ function BlockComponent({
           <textarea
             ref={textareaRef}
             value={localText}
-            onChange={(e) => setLocalText(e.target.value)}
+            onChange={(e) => { console.log('[CHANGE] New text:', e.target.value); setLocalText(e.target.value); }}
             onBlur={handleTextBlur}
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
