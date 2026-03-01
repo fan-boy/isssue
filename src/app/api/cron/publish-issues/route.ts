@@ -94,8 +94,9 @@ interface PublishedIssue {
   zines: { name: string; release_day: number } | { name: string; release_day: number }[] | null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function createNextIssue(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   publishedIssue: PublishedIssue
 ) {
   try {
