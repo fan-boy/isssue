@@ -153,15 +153,15 @@ export default function ZineHomePage() {
       </header>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={transitions.easeOutQuint}
         >
           {/* Current Issues - Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-16">
-            {/* Latest Published or Locked Issue */}
+          <div className="flex flex-col md:flex-row items-start justify-center gap-8 md:gap-12 mb-20">
+            {/* Latest Published or Locked Issue - Hero Size */}
             {(latestPublished || lockedIssue) && (
               <IssueCard
                 issue={latestPublished || lockedIssue!}
@@ -171,7 +171,7 @@ export default function ZineHomePage() {
               />
             )}
 
-            {/* Current Draft Issue */}
+            {/* Current Draft Issue - Companion Size */}
             {draftIssue && (
               <DraftIssueCard
                 issue={draftIssue}
@@ -188,9 +188,7 @@ export default function ZineHomePage() {
 
             {/* If only one issue exists (no published yet, only draft) */}
             {!latestPublished && !lockedIssue && draftIssue && (
-              <div className="hidden md:flex items-center justify-center border border-dashed border-white/10 rounded-xl">
-                <p className="text-white/30 text-sm">First issue coming soon!</p>
-              </div>
+              <div className="hidden" />
             )}
           </div>
 
@@ -256,7 +254,7 @@ export default function ZineHomePage() {
   );
 }
 
-// Published/Locked Issue Card - Magazine Style
+// Published/Locked Issue Card - Hero Magazine Style
 function IssueCard({ 
   issue, 
   zine, 
@@ -271,27 +269,13 @@ function IssueCard({
   const isPublished = type === 'published';
   
   return (
-    <div className="flex flex-col">
-      {/* Status + Date */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-          isPublished 
-            ? 'bg-green-500/20 text-green-400' 
-            : 'bg-amber-500/20 text-amber-400'
-        }`}>
-          {isPublished ? 'Published' : 'Locked'}
-        </span>
-        <span className="text-xs text-white/40">
-          {formatDate(issue.release_date)}
-        </span>
-      </div>
-
-      {/* Magazine Cover */}
+    <div className="flex flex-col items-center md:items-start">
+      {/* Magazine Cover - Large */}
       <Link href={`/z/${zineId}/issue/${issue.id}`}>
         <motion.div 
-          whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
-          transition={{ duration: 0.2 }}
-          className="w-52 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden"
+          whileHover={{ y: -8, boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}
+          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          className="w-64 md:w-72 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-2xl overflow-hidden"
         >
           {issue.cover_url ? (
             <>
@@ -300,17 +284,17 @@ function IssueCard({
                 alt={`${zine.name} Issue ${issue.issue_number}`}
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/30" />
-              <div className="relative h-full flex flex-col p-4">
-                <span className="text-[9px] text-white/70 uppercase tracking-[0.15em]">
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50" />
+              <div className="relative h-full flex flex-col p-6">
+                <span className="text-[10px] text-white/80 uppercase tracking-[0.2em] font-light">
                   Issue {issue.issue_number}
                 </span>
-                <div className="flex-1 flex items-start justify-center pt-2">
-                  <h2 className="text-lg font-serif text-white tracking-wide drop-shadow-lg text-center">
+                <div className="flex-1 flex items-start justify-center pt-4">
+                  <h2 className="text-2xl font-serif text-white tracking-wide drop-shadow-lg text-center">
                     {zine.name}
                   </h2>
                 </div>
-                <p className="text-[8px] text-white/60 uppercase tracking-[0.1em] text-center">
+                <p className="text-[9px] text-white/70 uppercase tracking-[0.15em] text-center">
                   {formatMonth(issue.month)}
                 </p>
               </div>
@@ -320,28 +304,42 @@ function IssueCard({
               <div className="absolute inset-0 opacity-40" style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
               }} />
-              <div className="relative h-full flex flex-col p-4">
-                <span className="text-[9px] text-[#888] uppercase tracking-[0.15em]">
+              <div className="relative h-full flex flex-col p-6">
+                <span className="text-[10px] text-[#888] uppercase tracking-[0.2em]">
                   Issue {issue.issue_number}
                 </span>
                 <div className="flex-1 flex flex-col items-center justify-center text-center">
-                  <h2 className="text-lg font-serif text-[#2d2d2d] tracking-wide mb-1">
+                  <h2 className="text-2xl font-serif text-[#2d2d2d] tracking-wide mb-1">
                     {zine.name}
                   </h2>
-                  <p className="text-xs text-[#666]">{formatMonth(issue.month)}</p>
+                  <p className="text-sm text-[#666]">{formatMonth(issue.month)}</p>
                 </div>
               </div>
             </>
           )}
           {/* Spine */}
-          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/15 to-transparent" />
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent" />
         </motion.div>
       </Link>
+      
+      {/* Status beneath */}
+      <div className="mt-4 flex items-center gap-2">
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider ${
+          isPublished 
+            ? 'bg-green-500/10 text-green-400/80' 
+            : 'bg-amber-500/10 text-amber-400/80'
+        }`}>
+          {isPublished ? 'Latest Issue' : 'Coming Soon'}
+        </span>
+        <span className="text-[10px] text-white/30">
+          {formatDate(issue.release_date)}
+        </span>
+      </div>
     </div>
   );
 }
 
-// Draft Issue Card - Magazine Style
+// Draft Issue Card - Companion Style
 function DraftIssueCard({
   issue,
   zine,
@@ -366,79 +364,75 @@ function DraftIssueCard({
   const daysUntilDeadline = getDaysUntil(issue.edit_deadline);
 
   return (
-    <div className="flex flex-col">
-      {/* Status + Progress */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-400">
-          Editing
-        </span>
-        <span className="text-xs text-white/40">
-          {pagesReady}/{totalMembers} ready
-        </span>
-      </div>
-
-      {/* Magazine Cover - Paper Style */}
+    <div className="flex flex-col items-center md:items-start">
+      {/* Magazine Cover - Smaller companion */}
       <Link href={`/z/${zineId}/issue/${issue.id}/edit`}>
         <motion.div 
-          whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
-          transition={{ duration: 0.2 }}
-          className="w-44 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-lg overflow-hidden"
+          whileHover={{ y: -6, boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}
+          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          className="w-48 md:w-52 aspect-[3/4] relative cursor-pointer rounded-sm bg-[#faf9f6] shadow-xl overflow-hidden"
         >
           {/* Paper texture */}
           <div className="absolute inset-0 opacity-40" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
           }} />
           
-          <div className="relative h-full flex flex-col p-4">
+          <div className="relative h-full flex flex-col p-5">
             {/* Top */}
             <div className="flex items-start justify-between">
               <span className="text-[9px] text-[#888] uppercase tracking-[0.15em]">
                 Issue {issue.issue_number}
               </span>
-              <span className="w-2 h-2 rounded-full bg-[#2d2d2d] animate-pulse" title="In progress" />
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" title="In progress" />
             </div>
             
             {/* Center */}
             <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <h2 className="text-lg font-serif text-[#2d2d2d] tracking-wide mb-1">
+              <h2 className="text-xl font-serif text-[#2d2d2d] tracking-wide mb-1">
                 {zine.name}
               </h2>
               <p className="text-xs text-[#666]">{formatMonth(issue.month)}</p>
+              
+              {/* Progress indicator */}
+              <div className="mt-4 flex items-center gap-1">
+                {Array.from({ length: totalMembers }).map((_, i) => (
+                  <div 
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${i < pagesReady ? 'bg-green-500' : 'bg-[#ccc]'}`}
+                  />
+                ))}
+              </div>
+              <p className="text-[8px] text-[#999] mt-1">{pagesReady}/{totalMembers} ready</p>
             </div>
             
             {/* Bottom */}
             <div className="text-center">
               <p className="text-[8px] text-[#999] uppercase tracking-[0.1em]">
-                Edit deadline {formatDate(issue.edit_deadline)}
+                Deadline {formatDate(issue.edit_deadline)}
               </p>
             </div>
           </div>
           
           {/* Spine */}
-          <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-r from-black/15 to-transparent" />
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/15 to-transparent" />
         </motion.div>
       </Link>
-
-      {/* Info below the card */}
-      <div className="mt-4 space-y-3">
-        {/* Timeline */}
-        <div className="flex gap-4 text-xs">
-          <div>
-            <span className="text-white/40">Deadline: </span>
-            <span className="text-white/70">
-              {formatDate(issue.edit_deadline)}
-              {daysUntilDeadline > 0 && ` (${daysUntilDeadline}d)`}
-            </span>
-          </div>
-          <div>
-            <span className="text-white/40">Releases: </span>
-            <span className="text-white/70">{formatDate(issue.release_date)}</span>
-          </div>
+      
+      {/* Info beneath */}
+      <div className="mt-4 space-y-3 w-48 md:w-52">
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider bg-blue-500/10 text-blue-400/80">
+            Now Editing
+          </span>
+          <span className="text-[10px] text-white/30">
+            {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : 'Due today'}
+          </span>
         </div>
 
         {/* Contributors */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center -space-x-1">
+          <div className="flex items-center -space-x-1.5">
             {members.slice(0, 4).map((member) => {
               const page = pages.find(p => p.user_id === member.user_id);
               const isReady = page?.status === 'ready';
@@ -446,8 +440,8 @@ function DraftIssueCard({
               return (
                 <div 
                   key={member.user_id} 
-                  className={`relative ${isReady ? 'ring-2 ring-green-500' : 'ring-1 ring-[#0a0a0a]'} rounded-full`}
-                  title={member.profiles?.name}
+                  className={`relative rounded-full ${isReady ? 'ring-2 ring-green-500' : 'ring-2 ring-[#0a0a0a]'}`}
+                  title={`${member.profiles?.name}${isReady ? ' ✓' : ''}`}
                 >
                   {member.profiles?.avatar_url ? (
                     <img 
@@ -475,7 +469,7 @@ function DraftIssueCard({
               href={`/z/${zineId}/settings`}
               className="text-[10px] text-white/30 hover:text-white transition-colors ml-auto"
             >
-              + Invite
+              Invite
             </Link>
           )}
         </div>
