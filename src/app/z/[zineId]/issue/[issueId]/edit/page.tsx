@@ -424,7 +424,8 @@ export default function EditPage() {
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
                 setSelectedBlockId(null);
-                setEditingBlockId(null);
+                // Don't set editingBlockId here - let the textarea's blur event handle it
+                // Otherwise we lose edits because the sync effect runs before blur saves
               }
             }}
           >
@@ -734,19 +735,11 @@ function BlockComponent({
   // Sync local text with block content (for undo/redo), but skip when we just finished editing
   useEffect(() => {
     if (block.type === 'text') {
-      console.log('[SYNC EFFECT]', {
-        blockContent: block.content,
-        localText,
-        isEditing,
-        justFinished: justFinishedEditingRef.current
-      });
       if (justFinishedEditingRef.current) {
-        console.log('[SYNC] Skipping - just finished editing');
         justFinishedEditingRef.current = false;
         return;
       }
       if (!isEditing) {
-        console.log('[SYNC] Setting localText to:', block.content);
         setLocalText(block.content);
       }
     }
@@ -794,9 +787,7 @@ function BlockComponent({
   }, [isDragging, dragStart, canvasRef, onUpdate]);
 
   const handleTextBlur = () => {
-    console.log('[BLUR] localText:', localText, 'block.content:', block.type === 'text' ? block.content : 'N/A');
     if (block.type === 'text') {
-      console.log('[BLUR] Calling onUpdate with:', localText);
       onUpdate({ content: localText });
       justFinishedEditingRef.current = true;
     }
@@ -884,7 +875,7 @@ function BlockComponent({
           <textarea
             ref={textareaRef}
             value={localText}
-            onChange={(e) => { console.log('[CHANGE] New text:', e.target.value); setLocalText(e.target.value); }}
+            onChange={(e) => setLocalText(e.target.value)}
             onBlur={handleTextBlur}
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
