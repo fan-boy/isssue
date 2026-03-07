@@ -1,15 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { transitions } from '@/lib/utils';
-
-const floatingElements = [
-  { id: 1, rotation: -12, x: '10%', y: '15%', delay: 0 },
-  { id: 2, rotation: 8, x: '85%', y: '20%', delay: 0.1 },
-  { id: 3, rotation: -5, x: '75%', y: '70%', delay: 0.2 },
-  { id: 4, rotation: 15, x: '5%', y: '65%', delay: 0.15 },
-];
 
 export default function Home() {
   return (
@@ -22,233 +16,364 @@ export default function Home() {
         }}
       />
 
-      {/* Floating decorative elements */}
-      {floatingElements.map((el) => (
-        <motion.div
-          key={el.id}
-          initial={{ opacity: 0, scale: 0.8, rotate: el.rotation - 10 }}
-          animate={{ opacity: 1, scale: 1, rotate: el.rotation }}
-          transition={{ delay: el.delay + 0.3, ...transitions.easeOutQuint }}
-          className="absolute hidden md:block"
-          style={{ left: el.x, top: el.y }}
-        >
-          <FloatingSticker index={el.id} />
-        </motion.div>
-      ))}
-
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-20">
+      <div className="relative z-10">
         {/* Hero section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={transitions.easeOutQuint}
-          className="text-center max-w-3xl"
-        >
-          {/* Tape decoration */}
+        <section className="min-h-screen flex flex-col items-center justify-center px-6 py-20">
           <motion.div
-            initial={{ opacity: 0, rotate: -15, scale: 0.8 }}
-            animate={{ opacity: 1, rotate: -12, scale: 1 }}
-            transition={{ delay: 0.2, ...transitions.easeOutQuint }}
-            className="inline-block mb-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={transitions.easeOutQuint}
+            className="text-center max-w-3xl"
           >
-            <div className="bg-[#f0e6a0]/80 px-6 py-2 text-sm font-medium text-[#5a5200] tracking-wide uppercase transform -rotate-2">
-              Coming Soon
-            </div>
-          </motion.div>
+            {/* Main headline */}
+            <h1 className="relative mb-8">
+              <motion.span
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1, ...transitions.easeOutQuint }}
+                className="block text-7xl md:text-9xl font-serif text-[#2d2d2d] leading-[0.85]"
+              >
+                i<span className="underline decoration-wavy decoration-[#e57373] underline-offset-8">sss</span>ue
+              </motion.span>
+            </h1>
 
-          {/* Main headline - collage style */}
-          <h1 className="relative mb-8">
-            <motion.span
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1, ...transitions.easeOutQuint }}
-              className="block text-7xl md:text-9xl font-serif text-[#2d2d2d] leading-[0.85]"
-            >
-              isssue
-            </motion.span>
-            <motion.span
-              initial={{ opacity: 0, rotate: 5 }}
-              animate={{ opacity: 1, rotate: 3 }}
+            {/* Subheadline */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, ...transitions.easeOutQuint }}
-              className="absolute -right-4 md:-right-8 top-0 text-2xl md:text-3xl font-hand text-[#e57373] transform rotate-3"
+              className="text-xl md:text-2xl text-[#5a5a5a] mb-4 leading-relaxed font-light"
             >
-              ✦
-            </motion.span>
-          </h1>
+              A monthly collaborative magazine where
+              <br />
+              <span className="font-serif italic">friends each get a page</span>
+            </motion.p>
 
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, ...transitions.easeOutQuint }}
-            className="text-xl md:text-2xl text-[#5a5a5a] mb-6 leading-relaxed font-light"
-          >
-            A monthly collaborative magazine where
-            <br />
-            <span className="font-serif italic">friends each get a page</span>
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, ...transitions.easeOutQuint }}
+              className="text-base text-[#8a8a8a] mb-10 max-w-lg mx-auto"
+            >
+              Create your page in secret. On release day, everyone's pages are revealed at once. 
+              React, annotate, and save the moments that matter.
+            </motion.p>
 
-          {/* Feature pills */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, ...transitions.easeOutQuint }}
-            className="flex flex-wrap justify-center gap-3 mb-12"
-          >
-            <FeaturePill rotation={-2}>Create together</FeaturePill>
-            <FeaturePill rotation={1}>Reveal together</FeaturePill>
-            <FeaturePill rotation={-1}>Annotate & react</FeaturePill>
+            {/* CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, ...transitions.easeOutQuint }}
+            >
+              <Link href="/login">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={transitions.snap}
+                  className="px-8 py-4 bg-[#2d2d2d] text-white rounded-full text-lg font-medium hover:bg-[#1a1a1a] transition-colors shadow-lg"
+                >
+                  Start your isssue →
+                </motion.button>
+              </Link>
+            </motion.div>
           </motion.div>
 
-          {/* CTA */}
+          {/* Scroll indicator */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, ...transitions.easeOutQuint }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, ...transitions.easeOutQuint }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2"
           >
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="text-[#aaa] text-sm flex flex-col items-center gap-2"
+            >
+              <span>See examples</span>
+              <span>↓</span>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Example Pages Section */}
+        <section className="py-24 px-6 bg-[#1a1a1a]">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={transitions.easeOutQuint}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-serif text-white mb-4">
+                Pages from real isssues
+              </h2>
+              <p className="text-[#888] max-w-lg mx-auto">
+                Every page tells a story. Here's what people are creating.
+              </p>
+            </motion.div>
+
+            {/* Example pages grid */}
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+              <ExamplePage
+                image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80"
+                title="Weekend in Joshua Tree"
+                author="Maya"
+                authorColor="#e57373"
+                caption="Finally escaped the city. The stars out here are unreal."
+                rotation={-2}
+                delay={0}
+              />
+              <ExamplePage
+                image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80"
+                title="Coffee Shop Discoveries"
+                author="Jordan"
+                authorColor="#64b5f6"
+                caption="Rating every cortado in Brooklyn. Current winner: 94 points."
+                rotation={1}
+                delay={0.1}
+                featured
+              />
+              <ExamplePage
+                image="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80"
+                title="Friendsgiving 2024"
+                author="Sam"
+                authorColor="#81c784"
+                caption="Everyone brought their specialty. We ate for 4 hours straight."
+                rotation={-1}
+                delay={0.2}
+              />
+            </div>
+
+            {/* Second row */}
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mt-8 max-w-4xl mx-auto">
+              <ExamplePage
+                image="https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=600&q=80"
+                title="Plant Dad Update"
+                author="Alex"
+                authorColor="#ffb74d"
+                caption="Monstera is thriving. Named her Delilah. She's my pride and joy."
+                rotation={2}
+                delay={0.3}
+              />
+              <ExamplePage
+                image="https://images.unsplash.com/photo-1534329539061-64caeb388c42?w=600&q=80"
+                title="Learning to Cook"
+                author="Riley"
+                authorColor="#ba68c8"
+                caption="Attempted Mom's pasta recipe. It was... edible? Progress!"
+                rotation={-2}
+                delay={0.4}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Who it's for Section */}
+        <section className="py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={transitions.easeOutQuint}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-serif text-[#2d2d2d] mb-4">
+                Who it's for
+              </h2>
+              <p className="text-[#8a8a8a] max-w-lg mx-auto">
+                Any group that wants to stay connected through creativity.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <WhoCard
+                emoji="👯"
+                title="Friend Groups"
+                description="The group chat, but make it a magazine. Monthly updates from everyone's lives."
+                delay={0}
+              />
+              <WhoCard
+                emoji="💕"
+                title="Couples"
+                description="Document your relationship. A shared scrapbook you both contribute to."
+                delay={0.1}
+              />
+              <WhoCard
+                emoji="🌍"
+                title="Long-distance Friends"
+                description="When you can't be there in person, share pages instead. Stay in each other's lives."
+                delay={0.2}
+              />
+              <WhoCard
+                emoji="👨‍👩‍👧‍👦"
+                title="Families"
+                description="Grandparents, cousins, everyone. A family newsletter that's actually fun."
+                delay={0.3}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="py-24 px-6 bg-white">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={transitions.easeOutQuint}
+              className="text-center mb-16"
+            >
+              <h2 className="text-3xl md:text-4xl font-serif text-[#2d2d2d] mb-4">
+                How it works
+              </h2>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <HowItWorksCard
+                number="01"
+                title="Gather your crew"
+                description="Start an isssue and invite up to 9 friends. Each person gets their own page in the monthly issue."
+                delay={0}
+              />
+              <HowItWorksCard
+                number="02"
+                title="Create in secret"
+                description="Add photos, write stories, share updates. Your page is private until release day — no peeking."
+                delay={0.1}
+              />
+              <HowItWorksCard
+                number="03"
+                title="Reveal & react"
+                description="On the 15th, everyone's pages are revealed. Flip through, leave comments, highlight your favorite moments."
+                delay={0.2}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-32 px-6 bg-[#2d2d2d]">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={transitions.easeOutQuint}
+            className="max-w-2xl mx-auto text-center"
+          >
+            <h2 className="text-3xl md:text-5xl font-serif text-white mb-6">
+              Start your first isssue
+            </h2>
+            <p className="text-[#888] mb-10 text-lg">
+              Free to create. Invite your people. See what everyone's been up to.
+            </p>
             <Link href="/login">
               <motion.button
-                whileHover={{ scale: 1.03, rotate: -1 }}
+                whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 transition={transitions.snap}
-                className="px-8 py-4 bg-[#2d2d2d] text-white rounded-full text-lg font-medium hover:bg-[#1a1a1a] transition-colors shadow-lg"
+                className="px-8 py-4 bg-white text-[#2d2d2d] rounded-full text-lg font-medium hover:bg-[#f5f3eb] transition-colors"
               >
-                Start your isssue
+                Get started →
               </motion.button>
             </Link>
           </motion.div>
-        </motion.div>
-
-        {/* Preview section */}
-        <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, ...transitions.easeOutQuint }}
-          className="mt-20 w-full max-w-4xl"
-        >
-          <ZinePreview />
-        </motion.div>
-
-        {/* How it works */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, ...transitions.easeOutQuint }}
-          className="mt-32 w-full max-w-4xl"
-        >
-          <h2 className="text-center text-sm uppercase tracking-widest text-[#8a8a8a] mb-12">
-            How it works
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <HowItWorksCard
-              number="01"
-              title="Gather your crew"
-              description="Invite up to 9 friends. Each person gets their own page in the monthly issue."
-              rotation={-2}
-              delay={0.9}
-            />
-            <HowItWorksCard
-              number="02"
-              title="Create in secret"
-              description="Design your page with photos, text, and stickers. No peeking at others' pages."
-              rotation={1}
-              delay={1}
-            />
-            <HowItWorksCard
-              number="03"
-              title="Reveal & react"
-              description="On release day, flip through everyone's pages. Highlight, annotate, and react."
-              rotation={-1}
-              delay={1.1}
-            />
-          </div>
-        </motion.div>
+        </section>
 
         {/* Footer */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, ...transitions.easeOutQuint }}
-          className="mt-32 text-center text-sm text-[#aaa]"
-        >
-          <p>Magazine nostalgia meets modern web</p>
-        </motion.footer>
+        <footer className="py-8 px-6 bg-[#1a1a1a] text-center">
+          <p className="text-sm text-[#666]">
+            isssue — Create together, reveal together
+          </p>
+        </footer>
       </div>
     </main>
   );
 }
 
-function FeaturePill({ children, rotation }: { children: React.ReactNode; rotation: number }) {
+function ExamplePage({ 
+  image, 
+  title, 
+  author, 
+  authorColor, 
+  caption, 
+  rotation,
+  delay,
+  featured = false
+}: { 
+  image: string;
+  title: string;
+  author: string;
+  authorColor: string;
+  caption: string;
+  rotation: number;
+  delay: number;
+  featured?: boolean;
+}) {
   return (
-    <span 
-      className="px-4 py-2 bg-white border border-[#e0ddd5] rounded-full text-sm text-[#5a5a5a] shadow-sm"
+    <motion.div
+      initial={{ opacity: 0, y: 40, rotate: rotation * 2 }}
+      whileInView={{ opacity: 1, y: 0, rotate: rotation }}
+      viewport={{ once: true }}
+      transition={{ delay, ...transitions.easeOutQuint }}
+      whileHover={{ scale: 1.02, rotate: 0, y: -8 }}
+      className={`bg-[#faf9f6] rounded-xl overflow-hidden shadow-2xl cursor-pointer ${featured ? 'md:-mt-4 md:mb-4' : ''}`}
       style={{ transform: `rotate(${rotation}deg)` }}
     >
-      {children}
-    </span>
+      {/* Image */}
+      <div className="aspect-[4/3] relative overflow-hidden">
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      
+      {/* Content */}
+      <div className="p-5">
+        <h3 className="font-serif text-lg text-[#2d2d2d] mb-2">{title}</h3>
+        <p className="text-sm text-[#666] mb-4 leading-relaxed">{caption}</p>
+        
+        {/* Author */}
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-5 h-5 rounded-full"
+            style={{ backgroundColor: authorColor }}
+          />
+          <span className="text-xs text-[#999]">{author}</span>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
-function FloatingSticker({ index }: { index: number }) {
-  const stickers = [
-    // Star burst
-    <div key="star" className="w-16 h-16 text-4xl flex items-center justify-center bg-[#fff8e1] rounded-full shadow-md border border-[#f0e6a0]">
-      ✦
-    </div>,
-    // Scribble circle
-    <div key="circle" className="w-20 h-20 rounded-full border-2 border-dashed border-[#e57373]/40" />,
-    // Tape piece
-    <div key="tape" className="w-24 h-8 bg-[#d4edda]/60 transform -rotate-12" />,
-    // Arrow
-    <div key="arrow" className="text-3xl text-[#64b5f6]/50">→</div>,
-  ];
-  return stickers[(index - 1) % stickers.length];
-}
-
-function ZinePreview() {
-  const previewPages = [
-    { color: '#e57373', name: 'Adi', rotation: -6, zIndex: 3 },
-    { color: '#64b5f6', name: 'Maya', rotation: 4, zIndex: 2 },
-    { color: '#81c784', name: 'Jordan', rotation: -2, zIndex: 1 },
-  ];
-
+function WhoCard({ 
+  emoji, 
+  title, 
+  description,
+  delay
+}: { 
+  emoji: string;
+  title: string;
+  description: string;
+  delay: number;
+}) {
   return (
-    <div className="relative h-80 md:h-96 flex items-center justify-center">
-      {previewPages.map((page, index) => (
-        <motion.div
-          key={page.name}
-          initial={{ opacity: 0, y: 40, rotate: page.rotation + 10 }}
-          animate={{ opacity: 1, y: 0, rotate: page.rotation }}
-          transition={{ delay: 0.7 + index * 0.1, ...transitions.easeOutQuint }}
-          whileHover={{ scale: 1.05, rotate: page.rotation / 2, zIndex: 10 }}
-          className="absolute w-48 md:w-64 aspect-[3/4] bg-white rounded-lg shadow-xl cursor-pointer overflow-hidden"
-          style={{ 
-            zIndex: page.zIndex,
-            transform: `rotate(${page.rotation}deg) translateX(${(index - 1) * 80}px)`,
-          }}
-        >
-          {/* Page content mock */}
-          <div className="h-full p-4 flex flex-col">
-            <div className="flex-1 bg-[#f8f7f4] rounded-md mb-3 flex items-center justify-center">
-              <div className="text-4xl opacity-20">📷</div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-2 bg-[#e0ddd5] rounded w-3/4" />
-              <div className="h-2 bg-[#e0ddd5] rounded w-1/2" />
-            </div>
-            {/* Author indicator */}
-            <div className="mt-3 flex items-center gap-2">
-              <div 
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: page.color }}
-              />
-              <span className="text-xs text-[#8a8a8a]">{page.name}</span>
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, ...transitions.easeOutQuint }}
+      className="bg-white border border-[#e0ddd5] rounded-xl p-6 text-center hover:shadow-lg transition-shadow"
+    >
+      <div className="text-4xl mb-4">{emoji}</div>
+      <h3 className="font-medium text-[#2d2d2d] mb-2">{title}</h3>
+      <p className="text-sm text-[#8a8a8a] leading-relaxed">{description}</p>
+    </motion.div>
   );
 }
 
@@ -256,25 +381,24 @@ function HowItWorksCard({
   number, 
   title, 
   description, 
-  rotation, 
   delay 
 }: { 
   number: string;
   title: string;
   description: string;
-  rotation: number;
   delay: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, rotate: rotation * 2 }}
-      animate={{ opacity: 1, y: 0, rotate: rotation }}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
       transition={{ delay, ...transitions.easeOutQuint }}
-      whileHover={{ scale: 1.02, rotate: 0 }}
-      className="bg-white border border-[#e0ddd5] rounded-xl p-6 shadow-sm cursor-default"
-      style={{ transform: `rotate(${rotation}deg)` }}
+      className="text-center"
     >
-      <div className="text-4xl font-serif text-[#e0ddd5] mb-3">{number}</div>
+      <div className="w-12 h-12 rounded-full bg-[#f5f3eb] flex items-center justify-center mx-auto mb-4">
+        <span className="font-serif text-lg text-[#2d2d2d]">{number}</span>
+      </div>
       <h3 className="text-lg font-medium text-[#2d2d2d] mb-2">{title}</h3>
       <p className="text-sm text-[#8a8a8a] leading-relaxed">{description}</p>
     </motion.div>
