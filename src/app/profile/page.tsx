@@ -269,7 +269,7 @@ function ProfilePageInner() {
           className="w-full max-w-md"
         >
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-serif text-white mb-3">Welcome to Zine</h1>
+            <h1 className="text-3xl font-serif text-white mb-3">Welcome to isssue</h1>
             <p className="text-white/50">Let's set up your profile</p>
           </div>
 

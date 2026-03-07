@@ -21,10 +21,10 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Zine — Create Together, Reveal Together",
+  title: "isssue — Create Together, Reveal Together",
   description: "A monthly collaborative zine where friends each get a page. Magazine nostalgia meets modern web.",
   openGraph: {
-    title: "Zine — Create Together, Reveal Together",
+    title: "isssue — Create Together, Reveal Together",
     description: "A monthly collaborative zine where friends each get a page.",
     type: "website",
   },

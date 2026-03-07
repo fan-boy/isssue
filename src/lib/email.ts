@@ -2,9 +2,8 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Using Resend's test domain for now
-// For production, verify your own domain at resend.com/domains
-const FROM_EMAIL = 'Zine <onboarding@resend.dev>';
+// Update this to your verified domain email
+const FROM_EMAIL = 'isssue <noreply@isssue.ink>';
 
 export async function sendInviteEmail({
   to,
@@ -22,7 +21,7 @@ export async function sendInviteEmail({
   const { data, error } = await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `${inviterName} invited you to "${zineName}" on Zine`,
+    subject: `${inviterName} invited you to "${zineName}" on isssue`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -35,7 +34,7 @@ export async function sendInviteEmail({
             
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 32px; text-align: center;">
-              <h1 style="color: white; font-size: 28px; font-weight: 600; margin: 0; font-family: Georgia, serif;">Zine</h1>
+              <h1 style="color: white; font-size: 28px; font-weight: 600; margin: 0; font-family: Georgia, serif;">isssue</h1>
             </div>
             
             <!-- Content -->
@@ -65,7 +64,7 @@ export async function sendInviteEmail({
             <!-- Footer -->
             <div style="padding: 24px 32px; background: #faf9f6; border-top: 1px solid #eee;">
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                Zine — Create together, reveal together
+                isssue — Create together, reveal together
               </p>
             </div>
             
@@ -74,14 +73,14 @@ export async function sendInviteEmail({
       </html>
     `,
     text: `
-${inviterName} invited you to "${zineName}" on Zine!
+${inviterName} invited you to "${zineName}" on isssue!
 
-Zine is a monthly collaborative zine where friends each get a page. Every month, everyone creates their own page in secret. When the issue drops, you all get to see each other's pages for the first time.
+isssue is a monthly collaborative zine where friends each get a page. Every month, everyone creates their own page in secret. When the issue drops, you all get to see each other's pages for the first time.
 
 Join here: ${loginUrl}
 
 ---
-Zine — Create together, reveal together
+isssue — Create together, reveal together
     `.trim(),
   });
 

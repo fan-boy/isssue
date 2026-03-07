@@ -148,7 +148,7 @@ export default function IssueViewPage() {
         <div className="text-center">
           <p className="text-white/50 mb-4">Issue not found</p>
           <Link href={`/z/${zineId}`} className="text-white/70 hover:text-white">
-            ← Back to Zine
+            ← Back to isssue
           </Link>
         </div>
       </main>

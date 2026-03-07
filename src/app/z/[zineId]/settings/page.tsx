@@ -254,7 +254,7 @@ export default function ZineSettingsPage() {
 
           {/* Zine Details */}
           <section className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6">
-            <h2 className="text-lg font-medium text-white mb-6">Zine Details</h2>
+            <h2 className="text-lg font-medium text-white mb-6">isssue Details</h2>
             <div className="space-y-5">
               <div>
                 <label className="block text-sm text-white/60 mb-2">Name</label>
@@ -415,7 +415,7 @@ export default function ZineSettingsPage() {
                 onClick={handleDeleteZine}
                 className="px-4 py-2 border border-red-500/50 text-red-400 rounded-lg text-sm hover:bg-red-500/10 transition-colors"
               >
-                Delete Zine
+                Delete isssue
               </button>
             </section>
           )}

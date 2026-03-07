@@ -136,7 +136,7 @@ export default function DashboardPage() {
             </motion.button>
           </div>
 
-          {/* Zine Grid - Magazine Cards */}
+          {/* isssue Grid - Magazine Cards */}
           {zines.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {zines.map((zine, index) => {
@@ -262,7 +262,7 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Create Zine Modal */}
+      {/* Create isssue Modal */}
       {showCreateModal && (
         <CreateZineModal 
           onClose={() => setShowCreateModal(false)} 
