@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { generateId } from '@/lib/utils';
+import { generateId, transitions } from '@/lib/utils';
 import type { Block, PageContent, ImageBlock, TextBlock, StickerBlock } from '@/lib/types';
 import { BACKGROUND_COLORS, IMAGE_FRAMES, STICKERS, StickerCategory } from '@/lib/types';
+import { PAGE_TEMPLATES, PageTemplate, TemplateSlot } from '@/lib/templates';
 
 // Constants
 const initialContent: PageContent = {
@@ -48,6 +49,8 @@ const PROMPTS = [
 
 const MAX_HISTORY = 50;
 
+type EditorMode = 'template-picker' | 'simple' | 'advanced';
+
 export default function EditPage() {
   const params = useParams();
   const router = useRouter();
@@ -59,6 +62,9 @@ export default function EditPage() {
   const [pageId, setPageId] = useState<string | null>(null);
   const [pageStatus, setPageStatus] = useState<'draft' | 'ready'>('draft');
   const [content, setContent] = useState<PageContent>(initialContent);
+  const [editorMode, setEditorMode] = useState<EditorMode>('template-picker');
+  const [selectedTemplate, setSelectedTemplate] = useState<PageTemplate | null>(null);
+  const [templateData, setTemplateData] = useState<Record<string, { content?: string; src?: string }>>({});
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,6 +73,7 @@ export default function EditPage() {
   const [showStickers, setShowStickers] = useState(false);
   const [stickerCategory, setStickerCategory] = useState<StickerCategory>('emotions');
   const [promptIndex, setPromptIndex] = useState(() => Math.floor(Math.random() * PROMPTS.length));
+  const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   
   // History for undo/redo
   const [history, setHistory] = useState<PageContent[]>([]);
@@ -95,6 +102,36 @@ export default function EditPage() {
           setContent(loadedContent);
           setHistory([loadedContent]);
           setHistoryIndex(0);
+          
+          // If page has content, skip template picker
+          if (loadedContent.blocks && loadedContent.blocks.length > 0) {
+            // Check if it was a template-based page
+            const templateId = (loadedContent as any).templateId;
+            if (templateId) {
+              const template = PAGE_TEMPLATES.find(t => t.id === templateId);
+              if (template) {
+                setSelectedTemplate(template);
+                // Reconstruct template data from blocks
+                const data: Record<string, { content?: string; src?: string }> = {};
+                loadedContent.blocks.forEach(block => {
+                  const slotId = (block as any).slotId;
+                  if (slotId) {
+                    if (block.type === 'text') {
+                      data[slotId] = { content: block.content };
+                    } else if (block.type === 'image') {
+                      data[slotId] = { src: block.src };
+                    }
+                  }
+                });
+                setTemplateData(data);
+                setEditorMode('simple');
+              } else {
+                setEditorMode('advanced');
+              }
+            } else {
+              setEditorMode('advanced');
+            }
+          }
         }
       }
     }
@@ -165,10 +202,98 @@ export default function EditPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (pageId) saveContent();
+      if (pageId && editorMode !== 'template-picker') saveContent();
     }, 1500);
     return () => clearTimeout(timer);
-  }, [content, pageId, saveContent]);
+  }, [content, pageId, saveContent, editorMode]);
+
+  // Select a template
+  const handleSelectTemplate = (template: PageTemplate) => {
+    if (template.id === 'freeform') {
+      setEditorMode('advanced');
+      updateContent({ ...initialContent, background: { type: 'color', value: template.background } });
+    } else {
+      setSelectedTemplate(template);
+      setEditorMode('simple');
+      // Initialize template content
+      const newContent: PageContent = {
+        blocks: [],
+        background: { type: 'color', value: template.background },
+        templateId: template.id,
+      } as PageContent & { templateId: string };
+      updateContent(newContent);
+    }
+  };
+
+  // Update template slot
+  const updateTemplateSlot = (slotId: string, data: { content?: string; src?: string }) => {
+    setTemplateData(prev => ({ ...prev, [slotId]: { ...prev[slotId], ...data } }));
+    
+    // Convert template data to blocks and save
+    if (selectedTemplate) {
+      const blocks: Block[] = selectedTemplate.slots.map(slot => {
+        const slotData = { ...templateData[slot.id], ...data };
+        if (slot.id === slotId) Object.assign(slotData, data);
+        
+        if (slot.type === 'image') {
+          return {
+            id: generateId('img'),
+            type: 'image' as const,
+            src: slotData.src || '',
+            size: slot.size || { width: 200, height: 200 },
+            position: slot.position,
+            rotation: 0,
+            zIndex: 1,
+            frame: 'polaroid' as const,
+            slotId: slot.id,
+          };
+        } else {
+          return {
+            id: generateId('txt'),
+            type: 'text' as const,
+            content: slotData.content || slot.placeholder,
+            style: slot.style?.fontFamily?.includes('Georgia') ? 'serif' as const : 'sans' as const,
+            size: slot.style?.fontSize === '28px' || slot.style?.fontSize === '32px' ? 'lg' as const : 'md' as const,
+            color: slot.style?.color || '#1A1A1A',
+            align: slot.style?.align || 'left',
+            position: slot.position,
+            rotation: 0,
+            zIndex: 1,
+            slotId: slot.id,
+          };
+        }
+      }).filter(block => {
+        // Only include blocks with actual content
+        if (block.type === 'image') return true; // Always include image slots
+        if (block.type === 'text') {
+          const slot = selectedTemplate.slots.find(s => s.id === (block as any).slotId);
+          return (block as TextBlock).content !== slot?.placeholder;
+        }
+        return true;
+      });
+
+      updateContent({
+        blocks,
+        background: { type: 'color', value: selectedTemplate.background },
+        templateId: selectedTemplate.id,
+      } as PageContent & { templateId: string });
+    }
+  };
+
+  // Handle image upload for template slot
+  const handleSlotImageUpload = async (slotId: string, file: File) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${generateId('img')}.${ext}`;
+    const { data, error } = await supabase.storage.from('page-images').upload(path, file);
+    if (error) { console.error('Upload error:', error); return; }
+    const { data: urlData } = supabase.storage.from('page-images').getPublicUrl(data.path);
+    
+    updateTemplateSlot(slotId, { src: urlData.publicUrl });
+  };
 
   const selectedBlock = content.blocks.find(b => b.id === selectedBlockId) || null;
 
@@ -248,7 +373,14 @@ export default function EditPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) addImageBlock(file);
+    if (file) {
+      if (activeSlotId) {
+        handleSlotImageUpload(activeSlotId, file);
+        setActiveSlotId(null);
+      } else {
+        addImageBlock(file);
+      }
+    }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -278,6 +410,149 @@ export default function EditPage() {
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
 
+  // Template Picker Screen
+  if (editorMode === 'template-picker') {
+    return (
+      <main className="min-h-screen bg-[#0a0a0a] flex flex-col">
+        {/* Header */}
+        <header className="bg-[#141414] border-b border-white/10">
+          <div className="px-6 py-4 flex items-center justify-between">
+            <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white text-sm">← Back</Link>
+            <span className="text-white/80 text-sm">{zineName}</span>
+            <div className="w-12" />
+          </div>
+        </header>
+
+        {/* Template Grid */}
+        <div className="flex-1 p-6 md:p-12 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h1 className="text-3xl md:text-4xl font-serif text-white mb-4">Choose a layout</h1>
+              <p className="text-white/50">Pick a template to get started, or go freeform</p>
+            </motion.div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {PAGE_TEMPLATES.map((template, i) => (
+                <motion.button
+                  key={template.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => handleSelectTemplate(template)}
+                  className="group bg-[#1a1a1a] border border-white/10 rounded-xl p-4 hover:border-white/30 hover:bg-[#242424] transition-all text-left"
+                >
+                  <div className="aspect-[3/4] bg-[#242424] rounded-lg mb-4 flex items-center justify-center text-4xl group-hover:scale-[1.02] transition-transform"
+                       style={{ backgroundColor: template.background === '#1A1A1A' ? '#333' : template.background }}>
+                    {template.preview}
+                  </div>
+                  <h3 className="text-white font-medium mb-1">{template.name}</h3>
+                  <p className="text-white/40 text-sm">{template.description}</p>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Simple Mode (Template-based editor)
+  if (editorMode === 'simple' && selectedTemplate) {
+    return (
+      <main className="h-screen h-[100dvh] bg-[#0a0a0a] flex flex-col overflow-hidden">
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+
+        {/* Header */}
+        <header className="bg-[#141414] border-b border-white/10 flex-shrink-0">
+          <div className="px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white text-sm">←</Link>
+              <span className="text-white/80 text-sm hidden sm:block">{zineName}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditorMode('advanced')}
+                className="px-3 py-1.5 text-xs text-white/50 hover:text-white border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Advanced
+              </button>
+              <span className="text-white/40 text-xs hidden sm:block">
+                {saving ? 'Saving...' : lastSaved ? '✓ Saved' : ''}
+              </span>
+              <button 
+                onClick={togglePageStatus} 
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pageStatus === 'ready' 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                {pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}
+              </button>
+              <button onClick={handleDone} className="px-4 py-1.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90">
+                Done
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Simple Mode Canvas */}
+          <div className="flex-1 flex items-center justify-center p-4 md:p-8 overflow-auto bg-[#1a1a1a]">
+            <div
+              className="w-full max-w-md aspect-[3/4] rounded-lg shadow-2xl relative overflow-hidden"
+              style={{ backgroundColor: selectedTemplate.background }}
+            >
+              {selectedTemplate.slots.map((slot) => (
+                <TemplateSlotComponent
+                  key={slot.id}
+                  slot={slot}
+                  data={templateData[slot.id]}
+                  onUpdate={(data) => updateTemplateSlot(slot.id, data)}
+                  onImageClick={() => {
+                    setActiveSlotId(slot.id);
+                    fileInputRef.current?.click();
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Simple Mode Sidebar */}
+          <div className="w-full md:w-72 bg-[#141414] border-t md:border-t-0 md:border-l border-white/10 p-4 overflow-y-auto">
+            <h3 className="text-white/50 text-xs uppercase tracking-wider mb-4">Background</h3>
+            <div className="grid grid-cols-5 gap-2 mb-6">
+              {BACKGROUND_COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setBackground(color)}
+                  className={`aspect-square rounded-lg border-2 transition-all ${
+                    content.background.value === color ? 'border-white scale-90' : 'border-transparent hover:border-white/30'
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+
+            <div className="border-t border-white/10 pt-4">
+              <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Tips</h3>
+              <ul className="text-white/40 text-sm space-y-2">
+                <li>• Tap on any area to edit</li>
+                <li>• Click photos to replace them</li>
+                <li>• Switch to Advanced for more control</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Advanced Mode (Original freeform editor)
   return (
     <main className="h-screen h-[100dvh] bg-[#0a0a0a] flex flex-col overflow-hidden">
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
@@ -290,6 +565,14 @@ export default function EditPage() {
             <span className="text-white/80 text-sm truncate hidden sm:block">{zineName}</span>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
+            {/* Mode Toggle */}
+            <button
+              onClick={() => setEditorMode('template-picker')}
+              className="px-2 py-1.5 text-xs text-white/50 hover:text-white border border-white/10 rounded-lg hover:bg-white/5 transition-colors hidden sm:block"
+            >
+              Templates
+            </button>
+            
             {/* Undo/Redo */}
             <div className="flex items-center gap-0.5 mr-1 sm:mr-2">
               <button 
@@ -424,8 +707,6 @@ export default function EditPage() {
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
                 setSelectedBlockId(null);
-                // Don't set editingBlockId here - let the textarea's blur event handle it
-                // Otherwise we lose edits because the sync effect runs before blur saves
               }
             }}
           >
@@ -509,6 +790,110 @@ export default function EditPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Template Slot Component
+function TemplateSlotComponent({
+  slot,
+  data,
+  onUpdate,
+  onImageClick,
+}: {
+  slot: TemplateSlot;
+  data?: { content?: string; src?: string };
+  onUpdate: (data: { content?: string; src?: string }) => void;
+  onImageClick: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localContent, setLocalContent] = useState(data?.content || '');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isEditing]);
+
+  if (slot.type === 'image') {
+    return (
+      <div
+        onClick={onImageClick}
+        className="absolute cursor-pointer group"
+        style={{
+          left: slot.position.x,
+          top: slot.position.y,
+          width: slot.size?.width || 200,
+          height: slot.size?.height || 200,
+        }}
+      >
+        {data?.src ? (
+          <div className="w-full h-full relative bg-white p-2 pb-6 shadow-lg rounded overflow-hidden">
+            <img src={data.src} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm">Change</span>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full h-full bg-white/10 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-white/15 hover:border-white/30 transition-colors">
+            <span className="text-3xl">📷</span>
+            <span className="text-white/40 text-sm">{slot.placeholder}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Text slot
+  const isEmpty = !data?.content || data.content === slot.placeholder;
+  
+  return (
+    <div
+      className="absolute cursor-text"
+      style={{
+        left: slot.position.x,
+        top: slot.position.y,
+        right: 40,
+      }}
+    >
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          value={localContent}
+          onChange={(e) => setLocalContent(e.target.value)}
+          onBlur={() => {
+            setIsEditing(false);
+            if (localContent.trim()) {
+              onUpdate({ content: localContent });
+            }
+          }}
+          placeholder={slot.placeholder}
+          className="w-full bg-transparent outline-none resize-none min-h-[60px]"
+          style={{
+            fontSize: slot.style?.fontSize || '16px',
+            fontFamily: slot.style?.fontFamily || 'system-ui',
+            textAlign: slot.style?.align || 'left',
+            color: slot.style?.color || '#1A1A1A',
+          }}
+        />
+      ) : (
+        <div
+          onClick={() => {
+            setLocalContent(data?.content || '');
+            setIsEditing(true);
+          }}
+          className={`min-h-[40px] rounded px-1 -mx-1 hover:bg-black/5 transition-colors ${isEmpty ? 'text-gray-400' : ''}`}
+          style={{
+            fontSize: slot.style?.fontSize || '16px',
+            fontFamily: slot.style?.fontFamily || 'system-ui',
+            textAlign: slot.style?.align || 'left',
+            color: isEmpty ? '#999' : (slot.style?.color || '#1A1A1A'),
+          }}
+        >
+          {data?.content || slot.placeholder}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -732,7 +1117,6 @@ function BlockComponent({
   const blockRef = useRef<HTMLDivElement>(null);
   const justFinishedEditingRef = useRef(false);
 
-  // Sync local text with block content (for undo/redo), but skip when we just finished editing
   useEffect(() => {
     if (block.type === 'text') {
       if (justFinishedEditingRef.current) {
@@ -814,7 +1198,6 @@ function BlockComponent({
     return block.align || 'left';
   };
 
-  // Render frame styles for images
   const renderImageFrame = (imageBlock: ImageBlock) => {
     const frame = imageBlock.frame || 'polaroid';
     const { width = 200, height = 250 } = imageBlock.size || {};
