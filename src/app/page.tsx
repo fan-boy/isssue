@@ -303,12 +303,6 @@ export default function Home() {
                 <Link href="/login" className="text-[#888] hover:text-white transition-colors">
                   Log in
                 </Link>
-                <a href="mailto:hello@isssue.ink" className="text-[#888] hover:text-white transition-colors">
-                  Contact
-                </a>
-                <a href="https://twitter.com/isssueapp" target="_blank" rel="noopener noreferrer" className="text-[#888] hover:text-white transition-colors">
-                  Twitter
-                </a>
               </div>
             </div>
             
@@ -317,14 +311,9 @@ export default function Home() {
               <p className="text-xs text-[#555]">
                 © {new Date().getFullYear()} isssue. All rights reserved.
               </p>
-              <div className="flex gap-4 text-xs text-[#555]">
-                <Link href="/privacy" className="hover:text-[#888] transition-colors">
-                  Privacy
-                </Link>
-                <Link href="/terms" className="hover:text-[#888] transition-colors">
-                  Terms
-                </Link>
-              </div>
+              <p className="text-xs text-[#555]">
+                Made with ✦ for friends
+              </p>
             </div>
           </div>
         </footer>
