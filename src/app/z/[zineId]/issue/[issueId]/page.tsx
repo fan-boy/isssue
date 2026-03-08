@@ -244,7 +244,7 @@ export default function IssueViewPage() {
             style={{ transformStyle: 'preserve-3d' }}
           >
             {isCoverPage ? (
-              <CoverPage issue={issue} />
+              <CoverPage issue={issue} contributors={pages} />
             ) : contentPage ? (
               <ContentPage 
                 page={contentPage} 
@@ -325,7 +325,12 @@ function Thumbnail({
 }
 
 // Cover Page Component
-function CoverPage({ issue }: { issue: IssueData }) {
+function CoverPage({ issue, contributors }: { issue: IssueData; contributors: PageData[] }) {
+  const contributorNames = contributors
+    .map(p => p.profiles?.name)
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="w-full h-full rounded shadow-2xl overflow-hidden relative bg-[#faf9f6]">
       {issue.cover_url ? (
@@ -335,7 +340,7 @@ function CoverPage({ issue }: { issue: IssueData }) {
             alt={`${issue.zines?.name} Issue ${issue.issue_number}`}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
           <div className="relative h-full flex flex-col p-4 sm:p-6 md:p-8">
             <span className="text-[10px] sm:text-[11px] text-white/70 uppercase tracking-[0.2em] font-light">
               Issue {issue.issue_number}
@@ -345,9 +350,16 @@ function CoverPage({ issue }: { issue: IssueData }) {
                 {issue.zines?.name}
               </h1>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-white/60 uppercase tracking-[0.15em] text-center">
-              {formatMonth(issue.month)}
-            </p>
+            <div className="text-center space-y-2">
+              {contributorNames && (
+                <p className="text-[9px] sm:text-[10px] text-white/80 tracking-wide">
+                  {contributorNames}
+                </p>
+              )}
+              <p className="text-[10px] sm:text-[11px] text-white/60 uppercase tracking-[0.15em]">
+                {formatMonth(issue.month)}
+              </p>
+            </div>
           </div>
         </>
       ) : (
@@ -365,6 +377,11 @@ function CoverPage({ issue }: { issue: IssueData }) {
                 {formatMonth(issue.month)}
               </p>
             </div>
+            {contributorNames && (
+              <p className="text-[9px] sm:text-[10px] text-[#888] text-center tracking-wide">
+                {contributorNames}
+              </p>
+            )}
           </div>
         </>
       )}
@@ -375,6 +392,10 @@ function CoverPage({ issue }: { issue: IssueData }) {
     </div>
   );
 }
+
+// Reference canvas size (matches editor's max-w-sm at 3:4 aspect)
+const REFERENCE_WIDTH = 384;
+const REFERENCE_HEIGHT = 512;
 
 // Content Page Component
 function ContentPage({ 
@@ -407,7 +428,7 @@ function ContentPage({
       )}
 
       {/* Author badge */}
-      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex items-center gap-1.5 sm:gap-2 bg-white/90 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm z-10">
         <Avatar 
           url={page.profiles?.avatar_url} 
           color={page.profiles?.color} 
@@ -418,12 +439,12 @@ function ContentPage({
       </div>
 
       {/* Page number */}
-      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 text-[10px] sm:text-[11px] text-gray-400 font-light">
+      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 text-[10px] sm:text-[11px] text-gray-400 font-light z-10">
         {pageNumber} / {totalPages}
       </div>
 
       {/* Magazine name */}
-      <div className="absolute top-2 sm:top-4 left-0 right-0 text-center">
+      <div className="absolute top-2 sm:top-4 left-0 right-0 text-center z-10">
         <span className="text-[8px] sm:text-[9px] text-gray-300 uppercase tracking-[0.15em]">
           {zineName}
         </span>
@@ -436,37 +457,44 @@ function ContentPage({
   );
 }
 
-// Block Renderer
+// Block Renderer - uses percentage positioning for responsive scaling
 function BlockRenderer({ block }: { block: Block }) {
+  // Convert pixel positions to percentages based on reference canvas size
+  const leftPercent = (block.position.x / REFERENCE_WIDTH) * 100;
+  const topPercent = (block.position.y / REFERENCE_HEIGHT) * 100;
+
   // Render image with frame
   const renderImage = (imageBlock: Block & { type: 'image' }) => {
     const frame = imageBlock.frame || 'polaroid';
     const { width = 200, height = 250 } = imageBlock.size || {};
     
+    // Convert size to percentages
+    const widthPercent = (width / REFERENCE_WIDTH) * 100;
+    const heightPercent = (height / REFERENCE_HEIGHT) * 100;
+    
     const frameStyles: Record<string, { container: string; inner: string }> = {
       none: { container: '', inner: 'rounded' },
-      polaroid: { container: 'bg-white p-1.5 sm:p-2 pb-4 sm:pb-6 shadow-lg rounded', inner: '' },
+      polaroid: { container: 'bg-white p-[2%] pb-[4%] shadow-lg rounded', inner: '' },
       rounded: { container: 'shadow-lg', inner: 'rounded-xl' },
-      film: { container: 'bg-[#1a1a1a] p-1 shadow-lg', inner: 'border-2 border-[#333]' },
-      torn: { container: 'bg-white p-1.5 sm:p-2 shadow-lg', inner: 'border-4 border-white' },
+      film: { container: 'bg-[#1a1a1a] p-[1%] shadow-lg', inner: 'border-2 border-[#333]' },
+      torn: { container: 'bg-white p-[2%] shadow-lg', inner: 'border-4 border-white' },
     };
     
     const style = frameStyles[frame] || frameStyles.polaroid;
-    const needsWidth = frame === 'polaroid' || frame === 'torn';
     
     return (
-      <div className={style.container} style={needsWidth ? { width: width + 16 } : undefined}>
+      <div className={style.container} style={{ width: `${widthPercent + 4}%` }}>
         {imageBlock.src ? (
           <img
             src={imageBlock.src}
             alt=""
-            className={`object-cover ${style.inner}`}
-            style={{ width, height }}
+            className={`w-full object-cover ${style.inner}`}
+            style={{ aspectRatio: `${width}/${height}` }}
           />
         ) : (
           <div
-            className={`bg-gray-100 flex items-center justify-center text-gray-400 ${style.inner}`}
-            style={{ width, height }}
+            className={`w-full bg-gray-100 flex items-center justify-center text-gray-400 ${style.inner}`}
+            style={{ aspectRatio: `${width}/${height}` }}
           >
             🖼
           </div>
@@ -479,20 +507,21 @@ function BlockRenderer({ block }: { block: Block }) {
     <div
       className="absolute"
       style={{
-        left: block.position.x,
-        top: block.position.y,
+        left: `${leftPercent}%`,
+        top: `${topPercent}%`,
         transform: `rotate(${block.rotation}deg)`,
         zIndex: block.zIndex,
       }}
     >
       {block.type === 'text' && (
         <div 
-          className="p-2 sm:p-3 whitespace-pre-wrap"
+          className="whitespace-pre-wrap"
           style={{ 
             color: block.color,
-            fontSize: FONT_SIZES[block.size] || FONT_SIZES.md,
+            fontSize: `clamp(0.7rem, ${parseFloat(FONT_SIZES[block.size] || FONT_SIZES.md) * 0.9}vw, ${FONT_SIZES[block.size] || FONT_SIZES.md})`,
             fontFamily: FONT_FAMILIES[block.style] || FONT_FAMILIES.sans,
             textAlign: block.align || 'left',
+            maxWidth: '80%',
           }}
         >
           {block.content}
@@ -502,7 +531,7 @@ function BlockRenderer({ block }: { block: Block }) {
       {block.type === 'sticker' && (
         <div 
           style={{ 
-            fontSize: `${3 * (block.scale || 1)}rem`,
+            fontSize: `clamp(1.5rem, ${3 * (block.scale || 1)}vw, ${3 * (block.scale || 1)}rem)`,
             lineHeight: 1,
           }}
         >
