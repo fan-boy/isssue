@@ -142,22 +142,6 @@ export default function Home() {
             <ZinePreview />
           </motion.div>
 
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="text-[#aaa] text-sm flex flex-col items-center gap-2"
-            >
-              <span>See more</span>
-              <span>↓</span>
-            </motion.div>
-          </motion.div>
         </section>
 
         {/* Who it's for Section */}
@@ -305,10 +289,44 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="py-8 px-6 bg-[#1a1a1a] text-center">
-          <p className="text-sm text-[#666]">
-            isssue — Create together, reveal together ✦
-          </p>
+        <footer className="py-12 px-6 bg-[#1a1a1a]">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+              {/* Logo & tagline */}
+              <div>
+                <h3 className="text-xl font-serif text-white mb-2">isssue</h3>
+                <p className="text-sm text-[#666]">Create together, reveal together</p>
+              </div>
+              
+              {/* Links */}
+              <div className="flex flex-wrap gap-6 text-sm">
+                <Link href="/login" className="text-[#888] hover:text-white transition-colors">
+                  Log in
+                </Link>
+                <a href="mailto:hello@isssue.ink" className="text-[#888] hover:text-white transition-colors">
+                  Contact
+                </a>
+                <a href="https://twitter.com/isssueapp" target="_blank" rel="noopener noreferrer" className="text-[#888] hover:text-white transition-colors">
+                  Twitter
+                </a>
+              </div>
+            </div>
+            
+            {/* Bottom bar */}
+            <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <p className="text-xs text-[#555]">
+                © {new Date().getFullYear()} isssue. All rights reserved.
+              </p>
+              <div className="flex gap-4 text-xs text-[#555]">
+                <Link href="/privacy" className="hover:text-[#888] transition-colors">
+                  Privacy
+                </Link>
+                <Link href="/terms" className="hover:text-[#888] transition-colors">
+                  Terms
+                </Link>
+              </div>
+            </div>
+          </div>
         </footer>
       </div>
     </main>
