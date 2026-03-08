@@ -414,32 +414,58 @@ export default function EditPage() {
           </div>
         </div>
 
-        {/* Right Panel - Properties */}
-        {selectedBlock && (
-          <div className="w-52 bg-[#141414] border-l border-white/10 p-4 overflow-y-auto hidden md:block">
-            {selectedBlock.type === 'text' && (
-              <>
-                <h3 className="text-white/50 text-xs uppercase mb-3">Font</h3>
-                <div className="grid grid-cols-2 gap-1 mb-4">
-                  {FONT_STYLES.map(s => <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { style: s.key as any })} className={`py-1.5 text-xs rounded ${(selectedBlock as TextBlock).style === s.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}>{s.label}</button>)}
+        {/* Right Panel - Properties (always rendered to prevent layout shift) */}
+        <div className="w-52 bg-[#141414] border-l border-white/10 p-4 overflow-y-auto hidden md:block">
+          {selectedBlock ? (
+            <>
+              {selectedBlock.type === 'text' && (
+                <>
+                  <h3 className="text-white/50 text-xs uppercase mb-3">Font</h3>
+                  <div className="grid grid-cols-2 gap-1 mb-4">
+                    {FONT_STYLES.map(s => <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { style: s.key as any })} className={`py-1.5 text-xs rounded ${(selectedBlock as TextBlock).style === s.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}>{s.label}</button>)}
+                  </div>
+                  <h3 className="text-white/50 text-xs uppercase mb-3">Size</h3>
+                  <div className="flex gap-1 mb-4">
+                    {FONT_SIZES.map(s => <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { size: s.key as any })} className={`flex-1 py-1.5 text-xs rounded ${(selectedBlock as TextBlock).size === s.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}>{s.label}</button>)}
+                  </div>
+                </>
+              )}
+              {selectedBlock.type === 'image' && (
+                <>
+                  <h3 className="text-white/50 text-xs uppercase mb-3">Frame</h3>
+                  <div className="grid grid-cols-3 gap-1 mb-4">
+                    {IMAGE_FRAMES.map(f => <button key={f.key} onClick={() => updateBlock(selectedBlock.id, { frame: f.key as any })} className={`py-2 text-xs rounded flex flex-col items-center ${(selectedBlock as ImageBlock).frame === f.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}><span>{f.icon}</span><span className="text-[10px]">{f.label}</span></button>)}
+                  </div>
+                </>
+              )}
+              <button onClick={() => deleteBlock(selectedBlock.id)} className="w-full py-2 text-sm border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 mt-4">Delete</button>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <h3 className="text-white/50 text-xs uppercase">Ideas</h3>
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 bg-white/5 rounded-lg">
+                  <p className="text-white/60 leading-relaxed">✨ What made you smile this month?</p>
                 </div>
-                <h3 className="text-white/50 text-xs uppercase mb-3">Size</h3>
-                <div className="flex gap-1 mb-4">
-                  {FONT_SIZES.map(s => <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { size: s.key as any })} className={`flex-1 py-1.5 text-xs rounded ${(selectedBlock as TextBlock).size === s.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}>{s.label}</button>)}
+                <div className="p-2.5 bg-white/5 rounded-lg">
+                  <p className="text-white/60 leading-relaxed">📸 Share a photo that tells a story</p>
                 </div>
-              </>
-            )}
-            {selectedBlock.type === 'image' && (
-              <>
-                <h3 className="text-white/50 text-xs uppercase mb-3">Frame</h3>
-                <div className="grid grid-cols-3 gap-1 mb-4">
-                  {IMAGE_FRAMES.map(f => <button key={f.key} onClick={() => updateBlock(selectedBlock.id, { frame: f.key as any })} className={`py-2 text-xs rounded flex flex-col items-center ${(selectedBlock as ImageBlock).frame === f.key ? 'bg-white text-black' : 'bg-white/5 text-white/60'}`}><span>{f.icon}</span><span className="text-[10px]">{f.label}</span></button>)}
+                <div className="p-2.5 bg-white/5 rounded-lg">
+                  <p className="text-white/60 leading-relaxed">🎵 What song is stuck in your head?</p>
                 </div>
-              </>
-            )}
-            <button onClick={() => deleteBlock(selectedBlock.id)} className="w-full py-2 text-sm border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/10 mt-4">Delete</button>
-          </div>
-        )}
+                <div className="p-2.5 bg-white/5 rounded-lg">
+                  <p className="text-white/60 leading-relaxed">🍜 Document a meal you loved</p>
+                </div>
+                <div className="p-2.5 bg-white/5 rounded-lg">
+                  <p className="text-white/60 leading-relaxed">💭 A tiny review of something great</p>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-white/30 text-[10px] text-center">Click an element to edit it</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
