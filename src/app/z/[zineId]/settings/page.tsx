@@ -171,8 +171,15 @@ export default function ZineSettingsPage() {
       return;
     }
 
-    // Generate cover
-    setMessage({ type: 'success', text: 'Published! Generating cover...' });
+    // Generate cover & notify members
+    setMessage({ type: 'success', text: 'Published! Generating cover & notifying members...' });
+
+    // Fire off notifications (don't wait)
+    fetch('/api/notify-published', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issueId: currentIssue.id, zineId }),
+    }).catch(err => console.error('Failed to notify members:', err));
 
     try {
       const response = await fetch('/api/generate-cover', {
@@ -185,14 +192,14 @@ export default function ZineSettingsPage() {
 
       if (response.ok) {
         setCurrentIssue({ ...currentIssue, status: 'published', cover_url: data.coverUrl });
-        setMessage({ type: 'success', text: 'Published with AI-generated cover!' });
+        setMessage({ type: 'success', text: 'Published! Everyone has been notified.' });
       } else {
         setCurrentIssue({ ...currentIssue, status: 'published' });
-        setMessage({ type: 'success', text: 'Published! (Cover generation failed: ' + data.error + ')' });
+        setMessage({ type: 'success', text: 'Published & notified! (Cover failed: ' + data.error + ')' });
       }
     } catch {
       setCurrentIssue({ ...currentIssue, status: 'published' });
-      setMessage({ type: 'success', text: 'Published! (Cover generation failed)' });
+      setMessage({ type: 'success', text: 'Published & notified! (Cover generation failed)' });
     }
 
     setPublishing(false);

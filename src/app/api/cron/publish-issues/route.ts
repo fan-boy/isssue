@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendIssuePublishedEmail } from '@/lib/email';
 
 function getSupabase() {
   return createClient(
@@ -7,6 +8,8 @@ function getSupabase() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://isssue.ink';
 
 // Vercel Cron calls this endpoint daily at 9 AM UTC
 export async function GET(request: NextRequest) {
@@ -50,6 +53,13 @@ export async function GET(request: NextRequest) {
         // Fire off cover generation via Supabase Edge Function (fire-and-forget)
         triggerCoverGeneration(issue.id).catch((err) => {
           console.error(`Failed to trigger cover generation for ${issue.id}:`, err);
+        });
+
+        // Send email notifications to all members (fire-and-forget)
+        const zines = issue.zines as { name: string; release_day: number } | { name: string; release_day: number }[] | null;
+        const zineName = Array.isArray(zines) ? zines[0]?.name : zines?.name;
+        notifyMembers(supabase, issue.zine_id, issue.id, issue.issue_number, zineName || 'your zine').catch((err) => {
+          console.error(`Failed to notify members for ${issue.id}:`, err);
         });
 
         // Create the next issue for this zine
@@ -188,4 +198,47 @@ async function triggerCoverGeneration(issueId: string): Promise<void> {
     const text = await response.text();
     throw new Error(`Edge function failed: ${response.status} ${text}`);
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function notifyMembers(
+  supabase: any,
+  zineId: string,
+  issueId: string,
+  issueNumber: number,
+  zineName: string
+): Promise<void> {
+  // Get all members with their profile info
+  const { data: members, error } = await supabase
+    .from('memberships')
+    .select('user_id, profiles!inner(email, name)')
+    .eq('zine_id', zineId);
+
+  if (error || !members || members.length === 0) {
+    console.log('No members to notify or error fetching:', error);
+    return;
+  }
+
+  const issueUrl = `${APP_URL}/z/${zineId}/issue/${issueId}`;
+
+  // Send emails in parallel
+  const emailPromises = members.map(async (member: { profiles: { email: string; name: string } }) => {
+    const { email, name } = member.profiles;
+    if (!email) return;
+
+    try {
+      await sendIssuePublishedEmail({
+        to: email,
+        memberName: name || 'there',
+        zineName,
+        issueNumber,
+        issueUrl,
+      });
+      console.log(`Sent publish notification to ${email}`);
+    } catch (err) {
+      console.error(`Failed to send notification to ${email}:`, err);
+    }
+  });
+
+  await Promise.all(emailPromises);
 }

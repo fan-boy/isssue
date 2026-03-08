@@ -5,6 +5,95 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Update this to your verified domain email
 const FROM_EMAIL = 'isssue <noreply@isssue.ink>';
 
+export async function sendIssuePublishedEmail({
+  to,
+  memberName,
+  zineName,
+  issueNumber,
+  issueUrl,
+}: {
+  to: string;
+  memberName: string;
+  zineName: string;
+  issueNumber: number;
+  issueUrl: string;
+}) {
+  const { data, error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `🎉 Issue #${issueNumber} of "${zineName}" is live!`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f3eb; margin: 0; padding: 40px 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); padding: 32px; text-align: center;">
+              <h1 style="color: white; font-size: 28px; font-weight: 600; margin: 0; font-family: Georgia, serif;">isssue</h1>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 32px;">
+              <p style="color: #1a1a1a; font-size: 20px; margin: 0 0 8px 0; font-family: Georgia, serif;">
+                It's here! 🎉
+              </p>
+              <p style="color: #666; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
+                Hey ${memberName}, <strong>Issue #${issueNumber}</strong> of <strong>"${zineName}"</strong> just dropped!
+              </p>
+              
+              <p style="color: #666; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
+                Everyone's pages are now revealed. Time to flip through and see what your friends have been up to. ✨
+              </p>
+              
+              <!-- CTA Button -->
+              <a href="${issueUrl}" style="display: block; background: #1a1a1a; color: white; text-decoration: none; padding: 16px 24px; border-radius: 8px; font-size: 16px; font-weight: 500; text-align: center; margin-bottom: 24px;">
+                Read Issue #${issueNumber} →
+              </a>
+              
+              <p style="color: #999; font-size: 13px; margin: 0;">
+                Or copy this link: <br>
+                <a href="${issueUrl}" style="color: #666; word-break: break-all;">${issueUrl}</a>
+              </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="padding: 24px 32px; background: #faf9f6; border-top: 1px solid #eee;">
+              <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
+                isssue — Create together, reveal together
+              </p>
+            </div>
+            
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+It's here! 🎉
+
+Hey ${memberName}, Issue #${issueNumber} of "${zineName}" just dropped!
+
+Everyone's pages are now revealed. Time to flip through and see what your friends have been up to.
+
+Read it here: ${issueUrl}
+
+---
+isssue — Create together, reveal together
+    `.trim(),
+  });
+
+  if (error) {
+    console.error('Failed to send issue published email:', error);
+    throw error;
+  }
+
+  return data;
+}
+
 export async function sendInviteEmail({
   to,
   inviterName,
