@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Input, Card, Avatar, Header, PageContainer, Message } from '@/components/ui';
@@ -270,7 +269,7 @@ function ProfilePageInner() {
         >
           <div className="text-center mb-10">
             <h1 className="text-3xl font-serif text-white mb-3">Welcome to isssue</h1>
-            <p className="text-white/50">Let's set up your profile</p>
+            <p className="text-white/50">Let&apos;s set up your profile</p>
           </div>
 
           <Card padding="lg">

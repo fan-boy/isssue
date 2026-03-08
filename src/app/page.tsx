@@ -97,7 +97,7 @@ export default function Home() {
               transition={{ delay: 0.3, ...transitions.easeOutQuint }}
               className="text-base text-[#8a8a8a] mb-10 max-w-lg mx-auto"
             >
-              Create your page in secret. On release day, everyone's pages are revealed at once. 
+              Create your page in secret. On release day, everyone&apos;s pages are revealed at once. 
               React, annotate, and save the moments that matter.
             </motion.p>
 
@@ -144,7 +144,7 @@ export default function Home() {
 
         </section>
 
-        {/* Who it's for Section */}
+        {/* Who it&apos;s for Section */}
         <section className="py-24 px-6">
           <div className="max-w-5xl mx-auto">
             <motion.div
@@ -155,7 +155,7 @@ export default function Home() {
               className="text-center mb-16"
             >
               <h2 className="text-3xl md:text-4xl font-serif text-[#2d2d2d] mb-4">
-                Who it's for
+                Who it&apos;s for
               </h2>
               <p className="text-[#8a8a8a] max-w-lg mx-auto">
                 Any group that wants to stay connected through creativity.
@@ -166,7 +166,7 @@ export default function Home() {
               <WhoCard
                 emoji="👯"
                 title="Friend Groups"
-                description="The group chat, but make it a magazine. Monthly updates from everyone's lives."
+                description="The group chat, but make it a magazine. Monthly updates from everyone&apos;s lives."
                 delay={0}
                 rotation={-2}
               />
@@ -228,7 +228,7 @@ export default function Home() {
               <HowItWorksCard
                 number="03"
                 title="Reveal & react"
-                description="On the 15th, everyone's pages are revealed. Flip through, leave comments, highlight your favorite moments."
+                description="On the 15th, everyone&apos;s pages are revealed. Flip through, leave comments, highlight your favorite moments."
                 rotation={-1}
                 delay={0.2}
               />
@@ -273,7 +273,7 @@ export default function Home() {
               Start your first isssue
             </h2>
             <p className="text-[#888] mb-10 text-lg">
-              Free to create. Invite your people. See what everyone's been up to.
+              Free to create. Invite your people. See what everyone&apos;s been up to.
             </p>
             <Link href="/login">
               <motion.button
@@ -392,7 +392,7 @@ function ZinePreview() {
                 className="w-5 h-5 rounded-full shadow-sm"
                 style={{ backgroundColor: page.color }}
               />
-              <span className="text-xs text-[#8a8a8a] font-medium">{page.name}'s page</span>
+              <span className="text-xs text-[#8a8a8a] font-medium">{page.name}&apos;s page</span>
             </div>
           </div>
         </motion.div>
