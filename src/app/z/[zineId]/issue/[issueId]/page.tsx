@@ -177,27 +177,20 @@ export default function IssueViewPage() {
   };
 
   return (
-    <main className="h-screen h-[100dvh] bg-[#111] flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 h-12 sm:h-14 flex items-center px-4 sm:px-6 z-20">
-        <div className="w-full flex items-center justify-between">
-          <Link 
-            href={`/z/${zineId}`} 
-            className="text-white/40 hover:text-white transition-colors text-sm flex items-center gap-2"
-          >
-            <span>←</span>
-            <span className="hidden sm:inline">Back</span>
-          </Link>
-          <div className="text-white/30 text-xs sm:text-sm">
-            {isCoverPage ? 'Cover' : `${currentPage} / ${pages.length}`}
-          </div>
-        </div>
-      </header>
+    <main className="h-screen h-[100dvh] bg-[#111] flex overflow-hidden">
+      {/* Back button - floating */}
+      <Link 
+        href={`/z/${zineId}`} 
+        className="absolute top-4 left-4 z-30 text-white/40 hover:text-white transition-colors text-sm flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-2 rounded-full"
+      >
+        <span>←</span>
+        <span className="hidden sm:inline">Back</span>
+      </Link>
 
-      {/* Magazine Reader - uses CSS to fit page within available space */}
+      {/* Magazine Reader */}
       <div 
         ref={containerRef}
-        className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-8 md:px-16 py-4 relative"
+        className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 relative"
         style={{ perspective: '1500px' }}
       >
         {/* Navigation zones - hidden on touch devices */}
@@ -226,7 +219,7 @@ export default function IssueViewPage() {
           )}
         </div>
 
-        {/* Page with swipe - height-based sizing for proper fit */}
+        {/* Page with swipe */}
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentPage}
@@ -244,7 +237,7 @@ export default function IssueViewPage() {
             style={{ 
               transformStyle: 'preserve-3d',
               aspectRatio: '3/4',
-              maxWidth: 'min(100%, calc((100vh - 140px) * 0.75))', // 3:4 ratio based on available height
+              maxWidth: 'min(100%, calc(100vh - 64px) * 0.75)',
             }}
           >
             {isCoverPage ? (
@@ -261,14 +254,15 @@ export default function IssueViewPage() {
         </AnimatePresence>
       </div>
 
-      {/* Thumbnails */}
-      <div className="flex-shrink-0 h-16 sm:h-18 flex items-center justify-center px-2">
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Right sidebar - Page thumbnails */}
+      <div className="w-20 sm:w-24 bg-[#0a0a0a] border-l border-white/10 flex flex-col py-4 overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-2 space-y-2 scrollbar-hide">
           {/* Cover */}
           <Thumbnail
             active={currentPage === 0}
             onClick={() => goToPage(0)}
             coverUrl={issue.cover_url}
+            index={0}
           />
           
           {/* Pages */}
@@ -280,6 +274,7 @@ export default function IssueViewPage() {
               bgColor={p.content?.background?.value}
               pageNum={i + 1}
               title={p.profiles?.name}
+              index={i + 1}
             />
           ))}
         </div>
@@ -295,7 +290,8 @@ function Thumbnail({
   coverUrl, 
   bgColor, 
   pageNum, 
-  title 
+  title,
+  index
 }: { 
   active: boolean;
   onClick: () => void;
@@ -303,26 +299,32 @@ function Thumbnail({
   bgColor?: string;
   pageNum?: number;
   title?: string;
+  index: number;
 }) {
   return (
     <button
       onClick={onClick}
       title={title}
-      className={`flex-shrink-0 rounded overflow-hidden transition-all ${
+      className={`w-full rounded overflow-hidden transition-all ${
         active 
-          ? 'ring-2 ring-white ring-offset-1 ring-offset-[#111] scale-105' 
-          : 'opacity-50 hover:opacity-80'
+          ? 'ring-2 ring-white ring-offset-1 ring-offset-[#0a0a0a]' 
+          : 'opacity-60 hover:opacity-100'
       }`}
     >
       <div 
-        className="w-7 h-10 sm:w-8 sm:h-11 flex items-center justify-center text-[7px] sm:text-[8px] font-medium"
+        className="w-full aspect-[3/4] flex items-center justify-center text-[8px] font-medium relative"
         style={{ backgroundColor: bgColor || '#faf9f6' }}
       >
         {coverUrl ? (
           <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
         ) : pageNum ? (
-          <span className="text-gray-500">{pageNum}</span>
-        ) : null}
+          <span className="text-gray-400">{pageNum}</span>
+        ) : (
+          <span className="text-gray-400 text-[10px]">Cover</span>
+        )}
+      </div>
+      <div className="text-[9px] text-white/40 text-center py-1 truncate">
+        {index === 0 ? 'Cover' : title || `Page ${pageNum}`}
       </div>
     </button>
   );
