@@ -63,6 +63,18 @@ const FONT_SIZES = [
 
 type SidePanel = 'layouts' | 'text' | 'photos' | 'stickers' | null;
 
+// Hook to detect mobile
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
+
 export default function EditPage() {
   const params = useParams();
   const router = useRouter();
@@ -265,6 +277,8 @@ export default function EditPage() {
   const handleDone = async () => { await saveContent(); router.push(`/z/${zineId}`); };
   const togglePanel = (panel: SidePanel) => setActivePanel(activePanel === panel ? null : panel);
   const selectedBlock = content.blocks.find(b => b.id === selectedBlockId) || null;
+  const isMobile = useIsMobile();
+  const [mobileSheet, setMobileSheet] = useState<SidePanel>(null);
 
   return (
     <main className="h-screen h-[100dvh] bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -285,9 +299,9 @@ export default function EditPage() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Icon Sidebar - Canva style */}
-        <div className="w-16 bg-[#141414] border-r border-white/10 flex flex-col items-center py-3 gap-1">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Icon Sidebar - Desktop only */}
+        <div className="w-16 bg-[#141414] border-r border-white/10 hidden md:flex flex-col items-center py-3 gap-1">
           {[
             { id: 'layouts' as SidePanel, icon: '⊞', label: 'Layouts' },
             { id: 'text' as SidePanel, icon: 'T', label: 'Text' },
@@ -305,15 +319,15 @@ export default function EditPage() {
           ))}
         </div>
 
-        {/* Expandable Panel */}
+        {/* Expandable Panel - Desktop only */}
         <AnimatePresence>
-          {activePanel && (
+          {activePanel && !isMobile && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 240, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="bg-[#1a1a1a] border-r border-white/10 overflow-hidden flex-shrink-0"
+              className="bg-[#1a1a1a] border-r border-white/10 overflow-hidden flex-shrink-0 hidden md:block"
             >
               <div className="w-60 h-full overflow-y-auto p-4">
                 {activePanel === 'layouts' && (
@@ -466,6 +480,162 @@ export default function EditPage() {
             </div>
           )}
         </div>
+
+        {/* Mobile Bottom Sheet */}
+        <AnimatePresence>
+          {isMobile && mobileSheet && (
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="absolute bottom-16 left-0 right-0 bg-[#1a1a1a] border-t border-white/10 rounded-t-2xl z-20 max-h-[60vh] overflow-hidden"
+            >
+              <div className="p-1 flex justify-center"><div className="w-10 h-1 bg-white/20 rounded-full" /></div>
+              <div className="p-4 overflow-y-auto max-h-[calc(60vh-40px)]">
+                {mobileSheet === 'layouts' && (
+                  <>
+                    <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Page Layouts</h3>
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      {LAYOUTS.map(layout => (
+                        <button key={layout.id} onClick={() => { applyLayout(layout.id); setMobileSheet(null); }}
+                          className={`aspect-[3/4] rounded-lg border-2 relative overflow-hidden ${selectedLayout === layout.id ? 'border-amber-400' : 'border-white/10'}`}>
+                          <div className="absolute inset-0 bg-[#f5f3eb] p-0.5">
+                            {layout.slots.map((slot, i) => (
+                              <div key={i} className={`absolute ${slot.type === 'image' ? 'bg-gray-300' : 'bg-gray-400'}`} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }} />
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Background</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {BACKGROUND_COLORS.map(color => (
+                        <button key={color} onClick={() => updateContent(p => ({ ...p, background: { type: 'color', value: color } }))}
+                          className={`aspect-square rounded-lg border-2 ${content.background.value === color ? 'border-white' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+                      ))}
+                    </div>
+                  </>
+                )}
+                {mobileSheet === 'text' && (
+                  <div className="space-y-3">
+                    <button onClick={() => { addTextBlock('lg'); setMobileSheet(null); }} className="w-full p-4 bg-white/5 rounded-xl text-left">
+                      <span className="text-xl font-serif text-white">Heading</span>
+                    </button>
+                    <button onClick={() => { addTextBlock('md'); setMobileSheet(null); }} className="w-full p-4 bg-white/5 rounded-xl text-left">
+                      <span className="text-base text-white">Body text</span>
+                    </button>
+                    <button onClick={() => { addTextBlock('sm'); setMobileSheet(null); }} className="w-full p-4 bg-white/5 rounded-xl text-left">
+                      <span className="text-sm text-white/70">Caption</span>
+                    </button>
+                  </div>
+                )}
+                {mobileSheet === 'photos' && (
+                  <div className="text-center py-8">
+                    <button onClick={() => { fileInputRef.current?.click(); setMobileSheet(null); }} className="px-8 py-4 bg-[#f5f3eb] text-[#2d2d2d] rounded-xl font-medium text-lg">
+                      📷 Choose Photo
+                    </button>
+                  </div>
+                )}
+                {mobileSheet === 'stickers' && (
+                  <>
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                      {(Object.keys(STICKERS) as StickerCategory[]).map(cat => (
+                        <button key={cat} onClick={() => setStickerCategory(cat)} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap ${stickerCategory === cat ? 'bg-white text-black' : 'bg-white/10 text-white/60'}`}>
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-8 gap-1">
+                      {STICKERS[stickerCategory].map(emoji => (
+                        <button key={emoji} onClick={() => { addSticker(emoji); setMobileSheet(null); }} className="aspect-square flex items-center justify-center text-2xl rounded-lg active:bg-white/10">
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Properties Sheet */}
+        <AnimatePresence>
+          {isMobile && selectedBlock && !mobileSheet && (
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="absolute bottom-16 left-0 right-0 bg-[#1a1a1a] border-t border-white/10 rounded-t-2xl z-20 p-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-white/50 text-xs uppercase">Edit {selectedBlock.type}</span>
+                <button onClick={() => setSelectedBlockId(null)} className="text-white/50 text-sm">Done</button>
+              </div>
+              {selectedBlock.type === 'text' && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-white/40 text-xs mb-2">Font</p>
+                    <div className="flex gap-2">
+                      {FONT_STYLES.map(s => (
+                        <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { style: s.key as any })}
+                          className={`flex-1 py-2 text-sm rounded-lg ${(selectedBlock as TextBlock).style === s.key ? 'bg-white text-black' : 'bg-white/10 text-white'}`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-white/40 text-xs mb-2">Size</p>
+                    <div className="flex gap-2">
+                      {FONT_SIZES.map(s => (
+                        <button key={s.key} onClick={() => updateBlock(selectedBlock.id, { size: s.key as any })}
+                          className={`flex-1 py-2 text-sm rounded-lg ${(selectedBlock as TextBlock).size === s.key ? 'bg-white text-black' : 'bg-white/10 text-white'}`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedBlock.type === 'image' && (
+                <div>
+                  <p className="text-white/40 text-xs mb-2">Frame</p>
+                  <div className="flex gap-2">
+                    {IMAGE_FRAMES.map(f => (
+                      <button key={f.key} onClick={() => updateBlock(selectedBlock.id, { frame: f.key as any })}
+                        className={`flex-1 py-3 text-sm rounded-lg flex flex-col items-center ${(selectedBlock as ImageBlock).frame === f.key ? 'bg-white text-black' : 'bg-white/10 text-white'}`}>
+                        <span>{f.icon}</span>
+                        <span className="text-[10px]">{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button onClick={() => deleteBlock(selectedBlock.id)} className="w-full mt-4 py-3 text-red-400 border border-red-500/30 rounded-xl">Delete</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Bottom Tab Bar */}
+        {isMobile && (
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-[#141414] border-t border-white/10 flex items-center justify-around z-30">
+            {[
+              { id: 'layouts' as SidePanel, icon: '⊞', label: 'Layout' },
+              { id: 'text' as SidePanel, icon: 'T', label: 'Text' },
+              { id: 'photos' as SidePanel, icon: '📷', label: 'Photo' },
+              { id: 'stickers' as SidePanel, icon: '😊', label: 'Stickers' },
+            ].map(item => (
+              <button key={item.id} onClick={() => setMobileSheet(mobileSheet === item.id ? null : item.id)}
+                className={`flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-lg ${mobileSheet === item.id ? 'text-white' : 'text-white/50'}`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-[10px]">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
