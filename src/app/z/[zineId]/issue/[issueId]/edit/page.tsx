@@ -248,52 +248,118 @@ export default function EditPage() {
     return () => clearTimeout(timer);
   }, [content, pageId, saveContent]);
 
-  // Apply layout
+  // Apply layout - preserves existing content and rearranges it
   const applyLayout = (layoutId: string) => {
     setSelectedLayout(layoutId);
     const layout = LAYOUTS.find(l => l.id === layoutId);
     if (!layout || layoutId === 'freeform') return;
 
-    // Create blocks from layout slots
-    const canvasWidth = 400; // Approximate canvas width
-    const canvasHeight = 533; // 3:4 aspect ratio
+    const canvasWidth = 400;
+    const canvasHeight = 533;
 
-    const blocks: Block[] = layout.slots.map((slot, i) => {
+    // Separate existing blocks by type
+    const existingImages = content.blocks.filter(b => b.type === 'image' && (b as ImageBlock).src);
+    const existingTexts = content.blocks.filter(b => b.type === 'text' && (b as TextBlock).content !== 'Add title' && (b as TextBlock).content !== 'Add text...' && (b as TextBlock).content !== 'Double-click to edit');
+    const existingStickers = content.blocks.filter(b => b.type === 'sticker');
+
+    // Get slots by type
+    const imageSlots = layout.slots.filter(s => s.type === 'image');
+    const textSlots = layout.slots.filter(s => s.type === 'text' || s.type === 'title');
+
+    const newBlocks: Block[] = [];
+    let imageIndex = 0;
+    let textIndex = 0;
+
+    // Map existing content to new layout positions
+    layout.slots.forEach((slot, i) => {
       const x = (slot.x / 100) * canvasWidth;
       const y = (slot.y / 100) * canvasHeight;
       const w = (slot.w / 100) * canvasWidth;
       const h = (slot.h / 100) * canvasHeight;
 
       if (slot.type === 'image') {
-        return {
-          id: generateId('img'),
-          type: 'image' as const,
-          src: '',
-          size: { width: w, height: h },
-          position: { x, y },
-          rotation: (slot as any).rotate || 0,
-          zIndex: i + 1,
-          frame: 'polaroid' as const,
-        };
+        // Reuse existing image if available
+        if (imageIndex < existingImages.length) {
+          const existing = existingImages[imageIndex] as ImageBlock;
+          newBlocks.push({
+            ...existing,
+            position: { x, y },
+            size: { width: w, height: h },
+            rotation: (slot as any).rotate || 0,
+            zIndex: i + 1,
+          });
+          imageIndex++;
+        } else {
+          // Create placeholder
+          newBlocks.push({
+            id: generateId('img'),
+            type: 'image' as const,
+            src: '',
+            size: { width: w, height: h },
+            position: { x, y },
+            rotation: (slot as any).rotate || 0,
+            zIndex: i + 1,
+            frame: 'polaroid' as const,
+          });
+        }
       } else {
-        return {
-          id: generateId('txt'),
-          type: 'text' as const,
-          content: slot.type === 'title' ? 'Add title' : 'Add text...',
-          style: slot.type === 'title' ? 'serif' as const : 'sans' as const,
-          size: slot.type === 'title' ? 'lg' as const : 'md' as const,
-          color: '#1A1A1A',
-          align: 'left' as const,
-          position: { x, y },
-          rotation: 0,
-          zIndex: i + 1,
-        };
+        // Reuse existing text if available
+        if (textIndex < existingTexts.length) {
+          const existing = existingTexts[textIndex] as TextBlock;
+          newBlocks.push({
+            ...existing,
+            position: { x, y },
+            size: slot.type === 'title' ? 'lg' as const : existing.size,
+            rotation: 0,
+            zIndex: i + 1,
+          });
+          textIndex++;
+        } else {
+          // Create placeholder
+          newBlocks.push({
+            id: generateId('txt'),
+            type: 'text' as const,
+            content: slot.type === 'title' ? 'Add title' : 'Add text...',
+            style: slot.type === 'title' ? 'serif' as const : 'sans' as const,
+            size: slot.type === 'title' ? 'lg' as const : 'md' as const,
+            color: '#1A1A1A',
+            align: 'left' as const,
+            position: { x, y },
+            rotation: 0,
+            zIndex: i + 1,
+          });
+        }
       }
+    });
+
+    // Add any remaining content that didn't fit in slots
+    const remainingImages = existingImages.slice(imageIndex);
+    const remainingTexts = existingTexts.slice(textIndex);
+    
+    remainingImages.forEach((img, i) => {
+      newBlocks.push({
+        ...img,
+        position: { x: 20 + i * 30, y: canvasHeight - 100 },
+        zIndex: newBlocks.length + 1,
+      } as ImageBlock);
+    });
+
+    remainingTexts.forEach((txt, i) => {
+      newBlocks.push({
+        ...txt,
+        position: { x: 20, y: canvasHeight - 60 + i * 30 },
+        zIndex: newBlocks.length + 1,
+      } as TextBlock);
+    });
+
+    // Keep all stickers
+    existingStickers.forEach((sticker) => {
+      newBlocks.push({ ...sticker, zIndex: newBlocks.length + 1 } as StickerBlock);
     });
 
     updateContent(prev => ({
       ...prev,
-      blocks,
+      blocks: newBlocks,
       layoutId,
     } as PageContent));
   };
@@ -476,18 +542,24 @@ export default function EditPage() {
                 <button
                   key={layout.id}
                   onClick={() => applyLayout(layout.id)}
-                  className={`w-full aspect-[3/4] rounded-lg border-2 transition-all relative overflow-hidden ${
+                  className={`w-full aspect-[3/4] rounded-lg border-2 transition-all relative overflow-hidden group ${
                     selectedLayout === layout.id 
-                      ? 'border-indigo-500 bg-indigo-500/10' 
-                      : 'border-white/10 bg-[#1a1a1a] hover:border-white/30'
+                      ? 'border-indigo-500 ring-2 ring-indigo-500/30' 
+                      : 'border-white/10 hover:border-white/30'
                   }`}
                 >
                   {/* Layout preview */}
-                  <div className="absolute inset-1 bg-white/90 rounded">
+                  <div className="absolute inset-0 bg-[#f5f3eb]">
                     {layout.slots.map((slot, i) => (
                       <div
                         key={i}
-                        className={`absolute ${slot.type === 'image' ? 'bg-gray-300' : 'bg-gray-400'} rounded-sm`}
+                        className={`absolute flex items-center justify-center transition-transform group-hover:scale-[1.02] ${
+                          slot.type === 'image' 
+                            ? 'bg-white shadow-sm border border-gray-200' 
+                            : slot.type === 'title'
+                            ? ''
+                            : ''
+                        }`}
                         style={{
                           left: `${slot.x}%`,
                           top: `${slot.y}%`,
@@ -495,17 +567,34 @@ export default function EditPage() {
                           height: `${slot.h}%`,
                           transform: (slot as any).rotate ? `rotate(${(slot as any).rotate}deg)` : undefined,
                         }}
-                      />
+                      >
+                        {slot.type === 'image' ? (
+                          <span className="text-gray-300 text-[8px]">📷</span>
+                        ) : slot.type === 'title' ? (
+                          <div className="w-full px-1">
+                            <div className="h-1.5 bg-gray-400 rounded-full w-3/4 mb-0.5" />
+                          </div>
+                        ) : (
+                          <div className="w-full px-1 space-y-0.5">
+                            <div className="h-0.5 bg-gray-300 rounded-full w-full" />
+                            <div className="h-0.5 bg-gray-300 rounded-full w-4/5" />
+                            <div className="h-0.5 bg-gray-300 rounded-full w-3/5" />
+                          </div>
+                        )}
+                      </div>
                     ))}
                     {layout.id === 'freeform' && (
-                      <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-lg">
-                        ✨
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                        <span className="text-2xl mb-1">✨</span>
+                        <span className="text-[8px]">Blank</span>
                       </div>
                     )}
                   </div>
                   {/* Label */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
-                    <span className="text-[10px] text-white/80">{layout.name}</span>
+                  <div className={`absolute bottom-0 left-0 right-0 px-1.5 py-1 text-center ${
+                    selectedLayout === layout.id ? 'bg-indigo-500' : 'bg-black/70'
+                  }`}>
+                    <span className="text-[10px] text-white font-medium">{layout.name}</span>
                   </div>
                 </button>
               ))
