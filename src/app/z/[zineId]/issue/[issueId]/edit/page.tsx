@@ -402,7 +402,7 @@ export default function EditPage() {
                 key={block.id} block={block} isSelected={selectedBlockId === block.id} isEditing={editingBlockId === block.id}
                 canvasRef={canvasRef} onSelect={() => { setSelectedBlockId(block.id); setEditingBlockId(null); }}
                 onStartEdit={() => setEditingBlockId(block.id)} onStopEdit={() => setEditingBlockId(null)}
-                onUpdate={(updates) => updateBlock(block.id, updates)} onImageClick={() => fileInputRef.current?.click()}
+                onUpdate={(updates: Partial<Block>) => updateBlock(block.id, updates)} onImageClick={() => fileInputRef.current?.click()}
               />
             ))}
             {content.blocks.length === 0 && (
