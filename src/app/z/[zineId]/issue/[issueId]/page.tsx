@@ -179,8 +179,8 @@ export default function IssueViewPage() {
   return (
     <main className="h-screen h-[100dvh] bg-[#111] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex-shrink-0 p-3 sm:p-4 md:p-6 z-20">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <header className="flex-shrink-0 h-12 sm:h-14 flex items-center px-4 sm:px-6 z-20">
+        <div className="w-full flex items-center justify-between">
           <Link 
             href={`/z/${zineId}`} 
             className="text-white/40 hover:text-white transition-colors text-sm flex items-center gap-2"
@@ -194,15 +194,15 @@ export default function IssueViewPage() {
         </div>
       </header>
 
-      {/* Magazine Reader */}
+      {/* Magazine Reader - uses CSS to fit page within available space */}
       <div 
         ref={containerRef}
-        className="flex-1 flex items-center justify-center px-2 sm:px-4 md:px-8 relative overflow-hidden"
+        className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-8 md:px-16 py-4 relative"
         style={{ perspective: '1500px' }}
       >
         {/* Navigation zones - hidden on touch devices */}
         <div 
-          className="hidden md:block absolute left-0 top-0 bottom-0 w-1/4 cursor-pointer z-10 group"
+          className="hidden md:block absolute left-0 top-0 bottom-0 w-24 cursor-pointer z-10 group"
           onClick={() => paginate(-1)}
         >
           {currentPage > 0 && (
@@ -214,7 +214,7 @@ export default function IssueViewPage() {
           )}
         </div>
         <div 
-          className="hidden md:block absolute right-0 top-0 bottom-0 w-1/4 cursor-pointer z-10 group"
+          className="hidden md:block absolute right-0 top-0 bottom-0 w-24 cursor-pointer z-10 group"
           onClick={() => paginate(1)}
         >
           {currentPage < totalPages - 1 && (
@@ -226,7 +226,7 @@ export default function IssueViewPage() {
           )}
         </div>
 
-        {/* Page with swipe */}
+        {/* Page with swipe - height-based sizing for proper fit */}
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentPage}
@@ -240,8 +240,12 @@ export default function IssueViewPage() {
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.1}
             onDragEnd={handleDragEnd}
-            className="w-full max-w-[90vw] sm:max-w-md md:max-w-lg lg:max-w-xl aspect-[3/4] relative touch-pan-y"
-            style={{ transformStyle: 'preserve-3d' }}
+            className="h-full max-h-full relative touch-pan-y"
+            style={{ 
+              transformStyle: 'preserve-3d',
+              aspectRatio: '3/4',
+              maxWidth: 'min(100%, calc((100vh - 140px) * 0.75))', // 3:4 ratio based on available height
+            }}
           >
             {isCoverPage ? (
               <CoverPage issue={issue} contributors={pages} />
@@ -258,8 +262,8 @@ export default function IssueViewPage() {
       </div>
 
       {/* Thumbnails */}
-      <div className="flex-shrink-0 py-3 sm:py-4 px-2">
-        <div className="flex justify-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex-shrink-0 h-16 sm:h-18 flex items-center justify-center px-2">
+        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {/* Cover */}
           <Thumbnail
             active={currentPage === 0}
@@ -415,10 +419,10 @@ function ContentPage({
   return (
     <div 
       className="w-full h-full rounded shadow-2xl overflow-hidden relative"
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor, containerType: 'size' }}
     >
       {hasContent ? (
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full overflow-hidden">
           {page.content.blocks.map((block: Block) => (
             <BlockRenderer key={block.id} block={block} />
           ))}
@@ -457,33 +461,40 @@ function ContentPage({
   );
 }
 
+// Font size as percentage of container (relative to reference)
+const FONT_SIZE_PERCENT: Record<string, number> = {
+  sm: 3.5,   // ~14px / 400px
+  md: 4.5,   // ~18px / 400px
+  lg: 6,     // ~24px / 400px
+  xl: 9,     // ~36px / 400px
+};
+
 // Block Renderer - uses percentage positioning for responsive scaling
 function BlockRenderer({ block }: { block: Block }) {
   // Convert pixel positions to percentages based on reference canvas size
-  const leftPercent = (block.position.x / REFERENCE_WIDTH) * 100;
-  const topPercent = (block.position.y / REFERENCE_HEIGHT) * 100;
+  const leftPercent = Math.min((block.position.x / REFERENCE_WIDTH) * 100, 95);
+  const topPercent = Math.min((block.position.y / REFERENCE_HEIGHT) * 100, 95);
 
   // Render image with frame
   const renderImage = (imageBlock: Block & { type: 'image' }) => {
     const frame = imageBlock.frame || 'polaroid';
     const { width = 200, height = 250 } = imageBlock.size || {};
     
-    // Convert size to percentages
-    const widthPercent = (width / REFERENCE_WIDTH) * 100;
-    const heightPercent = (height / REFERENCE_HEIGHT) * 100;
+    // Convert size to percentages, cap at 90% to prevent overflow
+    const widthPercent = Math.min((width / REFERENCE_WIDTH) * 100, 85);
     
     const frameStyles: Record<string, { container: string; inner: string }> = {
       none: { container: '', inner: 'rounded' },
-      polaroid: { container: 'bg-white p-[2%] pb-[4%] shadow-lg rounded', inner: '' },
+      polaroid: { container: 'bg-white p-[3%] pb-[8%] shadow-lg rounded', inner: '' },
       rounded: { container: 'shadow-lg', inner: 'rounded-xl' },
-      film: { container: 'bg-[#1a1a1a] p-[1%] shadow-lg', inner: 'border-2 border-[#333]' },
-      torn: { container: 'bg-white p-[2%] shadow-lg', inner: 'border-4 border-white' },
+      film: { container: 'bg-[#1a1a1a] p-[2%] shadow-lg', inner: 'border-2 border-[#333]' },
+      torn: { container: 'bg-white p-[3%] shadow-lg', inner: 'border-4 border-white' },
     };
     
     const style = frameStyles[frame] || frameStyles.polaroid;
     
     return (
-      <div className={style.container} style={{ width: `${widthPercent + 4}%` }}>
+      <div className={style.container} style={{ width: `${widthPercent}%` }}>
         {imageBlock.src ? (
           <img
             src={imageBlock.src}
@@ -496,12 +507,15 @@ function BlockRenderer({ block }: { block: Block }) {
             className={`w-full bg-gray-100 flex items-center justify-center text-gray-400 ${style.inner}`}
             style={{ aspectRatio: `${width}/${height}` }}
           >
-            🖼
+            📷
           </div>
         )}
       </div>
     );
   };
+
+  // Calculate max width for text to prevent overflow
+  const maxWidthPercent = Math.max(95 - leftPercent, 30);
 
   return (
     <div
@@ -511,32 +525,32 @@ function BlockRenderer({ block }: { block: Block }) {
         top: `${topPercent}%`,
         transform: `rotate(${block.rotation}deg)`,
         zIndex: block.zIndex,
+        maxWidth: `${maxWidthPercent}%`,
       }}
     >
       {block.type === 'text' && (
-        <div 
-          className="whitespace-pre-wrap"
+        <p 
+          className="whitespace-pre-wrap break-words leading-snug"
           style={{ 
             color: block.color,
-            fontSize: `clamp(0.7rem, ${parseFloat(FONT_SIZES[block.size] || FONT_SIZES.md) * 0.9}vw, ${FONT_SIZES[block.size] || FONT_SIZES.md})`,
+            fontSize: `${FONT_SIZE_PERCENT[block.size] || FONT_SIZE_PERCENT.md}cqw`,
             fontFamily: FONT_FAMILIES[block.style] || FONT_FAMILIES.sans,
             textAlign: block.align || 'left',
-            maxWidth: '80%',
           }}
         >
           {block.content}
-        </div>
+        </p>
       )}
       {block.type === 'image' && renderImage(block)}
       {block.type === 'sticker' && (
-        <div 
+        <span 
           style={{ 
-            fontSize: `clamp(1.5rem, ${3 * (block.scale || 1)}vw, ${3 * (block.scale || 1)}rem)`,
+            fontSize: `${8 * (block.scale || 1)}cqw`,
             lineHeight: 1,
           }}
         >
           {block.stickerId}
-        </div>
+        </span>
       )}
     </div>
   );
