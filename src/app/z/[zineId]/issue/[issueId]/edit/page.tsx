@@ -324,7 +324,7 @@ export default function EditPage() {
                         <button
                           key={layout.id}
                           onClick={() => applyLayout(layout.id)}
-                          className={`aspect-[3/4] rounded-lg border-2 relative overflow-hidden transition-all ${selectedLayout === layout.id ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}
+                          className={`aspect-[3/4] rounded-lg border-2 relative overflow-hidden transition-all ${selectedLayout === layout.id ? 'border-amber-400' : 'border-white/10 hover:border-white/30'}`}
                         >
                           <div className="absolute inset-0 bg-[#f5f3eb] p-1">
                             {layout.slots.map((slot, i) => (
@@ -347,7 +347,7 @@ export default function EditPage() {
 
                 {activePanel === 'text' && (
                   <>
-                    <button onClick={() => addTextBlock('lg')} className="w-full py-3 bg-indigo-500 text-white rounded-lg font-medium mb-4 hover:bg-indigo-600 transition-colors">+ Add text</button>
+                    <button onClick={() => addTextBlock('lg')} className="w-full py-3 bg-[#f5f3eb] text-[#2d2d2d] rounded-lg font-medium mb-4 hover:bg-white transition-colors">+ Add text</button>
                     <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Text styles</h3>
                     <div className="space-y-2">
                       <button onClick={() => addTextBlock('lg')} className="w-full p-3 bg-white/5 rounded-lg text-left hover:bg-white/10 transition-colors">
@@ -365,7 +365,7 @@ export default function EditPage() {
 
                 {activePanel === 'photos' && (
                   <>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full py-3 bg-indigo-500 text-white rounded-lg font-medium mb-4 hover:bg-indigo-600 transition-colors">+ Upload photo</button>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full py-3 bg-[#f5f3eb] text-[#2d2d2d] rounded-lg font-medium mb-4 hover:bg-white transition-colors">+ Upload photo</button>
                     <p className="text-white/40 text-sm text-center">Your uploaded photos will appear on the canvas</p>
                   </>
                 )}
@@ -513,7 +513,7 @@ function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onS
         <textarea ref={textareaRef} value={localText} onChange={(e) => setLocalText(e.target.value)}
           onBlur={() => { onUpdate({ content: localText }); onStopEdit(); }} onMouseDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => { if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) { onUpdate({ content: localText }); onStopEdit(); } }}
-          className="bg-white border-2 border-indigo-500 p-3 min-w-[200px] min-h-[80px] resize outline-none rounded"
+          className="bg-white border-2 border-amber-400 p-3 min-w-[200px] min-h-[80px] resize outline-none rounded"
           style={{ color: block.color, fontSize: size, fontFamily: font, textAlign: block.align || 'left' }} />
       ) : (
         <div className="p-2 min-w-[60px] rounded hover:bg-black/5 whitespace-pre-wrap" style={{ color: block.color, fontSize: size, fontFamily: font, textAlign: block.align || 'left' }}>{block.content}</div>

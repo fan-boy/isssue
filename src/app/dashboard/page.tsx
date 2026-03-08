@@ -482,7 +482,7 @@ function CreateZineModal({
                     onClick={() => toggleFriend(friend.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
                       selectedFriends.has(friend.id)
-                        ? 'bg-violet-500/20 border border-violet-500/40'
+                        ? 'bg-amber-500/20 border border-amber-500/40'
                         : 'bg-[#0a0a0a] border border-white/10 hover:border-white/20'
                     }`}
                   >
@@ -505,7 +505,7 @@ function CreateZineModal({
                       <p className="text-white/40 text-xs">{friend.email}</p>
                     </div>
                     {selectedFriends.has(friend.id) && (
-                      <span className="text-violet-400">✓</span>
+                      <span className="text-amber-400">✓</span>
                     )}
                   </button>
                 ))}

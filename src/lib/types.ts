@@ -118,17 +118,17 @@ export const TEXT_SIZES = {
   xl: '2.5rem',
 } as const;
 
-// Background palette options
+// Background palette options (brand-aligned warm neutrals)
 export const BACKGROUND_COLORS = [
   '#FFFFFF', // white
   '#faf8f5', // cream
-  '#f5f3eb', // warm white
+  '#f5f3eb', // warm white (brand bg)
   '#e8e4dc', // kraft
   '#f0e6d3', // parchment
-  '#e6ebe7', // sage tint
-  '#e8e6ef', // lavender tint
+  '#f5efe6', // warm sand
+  '#f0ebe0', // oat
   '#f5e6e0', // blush
-  '#2d2d2d', // dark
+  '#2d2d2d', // dark (brand dark)
   '#1a1a1a', // darker
 ] as const;
 
