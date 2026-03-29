@@ -409,7 +409,7 @@ export default function EditPage() {
             ref={canvasRef}
             className="w-full max-w-sm md:max-w-md aspect-[3/4] rounded-lg shadow-2xl relative overflow-hidden"
             style={{ backgroundColor: content.background.value }}
-            onMouseDown={(e) => { if (e.target === e.currentTarget) { setSelectedBlockId(null); setEditingBlockId(null); } }}
+            onMouseDown={(e) => { if (e.target === e.currentTarget) { setSelectedBlockId(null); } }}
           >
             {content.blocks.map(block => (
               <BlockComponent
@@ -649,7 +649,7 @@ function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onS
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { if (block.type === 'text' && !isEditing) setLocalText(block.content); }, [block.content, isEditing]);
+  useEffect(() => { if (block.type === 'text' && !isEditing) setLocalText(block.content); }, [block.type, block.content, isEditing]);
   useEffect(() => { if (isEditing && textareaRef.current) { textareaRef.current.focus(); textareaRef.current.select(); } }, [isEditing]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
