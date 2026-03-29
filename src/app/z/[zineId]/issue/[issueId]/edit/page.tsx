@@ -404,12 +404,13 @@ export default function EditPage() {
         </AnimatePresence>
 
         {/* Canvas Area */}
-        <div className="flex-1 flex items-center justify-center p-4 md:p-8 bg-[#0f0f0f] overflow-auto">
+        <div className="flex-1 flex items-start md:items-center justify-center p-4 pb-20 md:pb-8 md:p-8 bg-[#0f0f0f] overflow-auto">
           <div
             ref={canvasRef}
             className="w-full max-w-sm md:max-w-md aspect-[3/4] rounded-lg shadow-2xl relative overflow-hidden"
             style={{ backgroundColor: content.background.value }}
             onMouseDown={(e) => { if (e.target === e.currentTarget) { setSelectedBlockId(null); } }}
+            onTouchEnd={(e) => { if (e.target === e.currentTarget) { setSelectedBlockId(null); setEditingBlockId(null); } }}
           >
             {content.blocks.map(block => (
               <BlockComponent
@@ -417,6 +418,7 @@ export default function EditPage() {
                 canvasRef={canvasRef} onSelect={() => { setSelectedBlockId(block.id); setEditingBlockId(null); }}
                 onStartEdit={() => setEditingBlockId(block.id)} onStopEdit={() => setEditingBlockId(null)}
                 onUpdate={(updates: Partial<Block>) => updateBlock(block.id, updates)} onImageClick={() => fileInputRef.current?.click()}
+                isMobile={isMobile}
               />
             ))}
             {content.blocks.length === 0 && (
@@ -641,17 +643,45 @@ export default function EditPage() {
   );
 }
 
+// Mobile text edit modal
+function MobileTextModal({ block, onSave, onClose }: { block: TextBlock; onSave: (text: string) => void; onClose: () => void }) {
+  const [text, setText] = useState(block.content);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { setTimeout(() => { ref.current?.focus(); ref.current?.select(); }, 100); }, []);
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/80 flex flex-col justify-end" onClick={onClose}>
+      <div className="bg-[#1a1a1a] rounded-t-2xl p-4" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-white/50 text-xs uppercase tracking-wider">Edit text</span>
+          <button onClick={() => { onSave(text); onClose(); }} className="px-4 py-1.5 bg-amber-400 text-black text-sm font-medium rounded-lg">Done</button>
+        </div>
+        <textarea
+          ref={ref}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          className="w-full bg-white/10 text-white rounded-xl p-3 text-base outline-none resize-none border border-white/20 focus:border-amber-400"
+          rows={5}
+          placeholder="Type here..."
+        />
+      </div>
+    </div>
+  );
+}
+
 // Block Component
-function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onStartEdit, onStopEdit, onUpdate, onImageClick }: any) {
+function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onStartEdit, onStopEdit, onUpdate, onImageClick, isMobile }: any) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [localText, setLocalText] = useState(block.type === 'text' ? block.content : '');
+  const [showMobileEdit, setShowMobileEdit] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<number>(0);
 
   useEffect(() => { if (block.type === 'text' && !isEditing) setLocalText(block.content); }, [block.type, block.content, isEditing]);
   useEffect(() => { if (isEditing && textareaRef.current) { textareaRef.current.focus(); textareaRef.current.select(); } }, [isEditing]);
 
+  // Mouse drag (desktop)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isEditing) return;
     e.preventDefault(); e.stopPropagation();
@@ -672,13 +702,61 @@ function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onS
     return () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
   }, [isDragging, dragStart, canvasRef, onUpdate]);
 
+  // Touch drag (mobile)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isEditing) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    const rect = blockRef.current?.getBoundingClientRect();
+    if (rect) setDragStart({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+
+    // Double-tap detection for text edit
+    const now = Date.now();
+    if (isSelected && block.type === 'text' && now - lastTapRef.current < 400) {
+      if (isMobile) {
+        setShowMobileEdit(true);
+      } else {
+        onStartEdit();
+      }
+    }
+    lastTapRef.current = now;
+    onSelect();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const move = (e: TouchEvent) => {
+      e.preventDefault();
+      if (!canvasRef.current) return;
+      const touch = e.touches[0];
+      const c = canvasRef.current.getBoundingClientRect();
+      onUpdate({ position: { x: Math.max(0, Math.min(c.width - 60, touch.clientX - c.left - dragStart.x)), y: Math.max(0, Math.min(c.height - 60, touch.clientY - c.top - dragStart.y)) } });
+    };
+    const up = () => setIsDragging(false);
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', up);
+    return () => { document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up); };
+  }, [isDragging, dragStart, canvasRef, onUpdate]);
+
   const font = FONT_STYLES.find(s => s.key === block.style)?.fontFamily || 'inherit';
   const size = FONT_SIZES.find(s => s.key === block.size)?.size || '18px';
 
   return (
-    <div ref={blockRef} onMouseDown={handleMouseDown} onDoubleClick={(e) => { e.stopPropagation(); if (block.type === 'text') onStartEdit(); }}
-      className={`absolute select-none ${isEditing ? 'cursor-text' : isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{ left: block.position.x, top: block.position.y, transform: `rotate(${block.rotation}deg)`, zIndex: isSelected ? 100 : block.zIndex, outline: isSelected && !isEditing ? '2px solid #6366f1' : 'none', outlineOffset: '3px' }}>
+    <>
+      {showMobileEdit && block.type === 'text' && (
+        <MobileTextModal
+          block={block as TextBlock}
+          onSave={(text) => { onUpdate({ content: text }); setLocalText(text); }}
+          onClose={() => setShowMobileEdit(false)}
+        />
+      )}
+      <div ref={blockRef}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onDoubleClick={(e) => { e.stopPropagation(); if (block.type === 'text' && !isMobile) onStartEdit(); }}
+        className={`absolute select-none ${isEditing ? 'cursor-text' : isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{ left: block.position.x, top: block.position.y, transform: `rotate(${block.rotation}deg)`, zIndex: isSelected ? 100 : block.zIndex, outline: isSelected && !isEditing ? '2px solid #6366f1' : 'none', outlineOffset: '3px' }}>
       {block.type === 'text' && (isEditing ? (
         <textarea ref={textareaRef} value={localText} onChange={(e) => setLocalText(e.target.value)}
           onBlur={() => { onUpdate({ content: localText }); onStopEdit(); }} onMouseDown={(e) => e.stopPropagation()}
@@ -696,5 +774,6 @@ function BlockComponent({ block, isSelected, isEditing, canvasRef, onSelect, onS
       )}
       {block.type === 'sticker' && <div style={{ fontSize: `${3 * (block.scale || 1)}rem` }}>{block.stickerId}</div>}
     </div>
+    </>
   );
 }
