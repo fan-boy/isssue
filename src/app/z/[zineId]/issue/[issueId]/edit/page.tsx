@@ -91,12 +91,22 @@ export default function EditPage() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [activePanel, setActivePanel] = useState<SidePanel>('layouts');
+
+  // Refs to always have fresh values in callbacks (avoids stale closures)
+  const contentRef = useRef<PageContent>(content);
+  const selectedLayoutRef = useRef<string>(selectedLayout);
+  const pageIdRef = useRef<string | null>(null);
   const [stickerCategory, setStickerCategory] = useState<StickerCategory>('emotions');
   
   const [history, setHistory] = useState<PageContent[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoRedo = useRef(false);
   
+  // Keep refs in sync with state
+  useEffect(() => { contentRef.current = content; }, [content]);
+  useEffect(() => { selectedLayoutRef.current = selectedLayout; }, [selectedLayout]);
+  useEffect(() => { pageIdRef.current = pageId; }, [pageId]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -164,15 +174,28 @@ export default function EditPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
 
-  // Auto-save
+  // Auto-save — uses refs so it always has the latest content, no stale closure issues
   const saveContent = useCallback(async () => {
-    if (!pageId) return;
+    const currentPageId = pageIdRef.current;
+    if (!currentPageId) return;
     setSaving(true);
-    const supabase = createClient();
-    await supabase.from('pages').update({ content: { ...content, layoutId: selectedLayout } }).eq('id', pageId);
-    setLastSaved(new Date());
-    setSaving(false);
-  }, [pageId, content, selectedLayout]);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('pages')
+        .update({ content: { ...contentRef.current, layoutId: selectedLayoutRef.current } })
+        .eq('id', currentPageId);
+      if (error) {
+        console.error('Save failed:', error.message);
+      } else {
+        setLastSaved(new Date());
+      }
+    } catch (err) {
+      console.error('Unexpected save error:', err);
+    } finally {
+      setSaving(false);
+    }
+  }, []); // no deps needed — reads from refs
 
   useEffect(() => {
     const timer = setTimeout(() => { if (pageId) saveContent(); }, 1500);
@@ -274,7 +297,10 @@ export default function EditPage() {
     setSelectedBlockId(null);
   };
 
-  const handleDone = async () => { await saveContent(); router.push(`/z/${zineId}`); };
+  const handleDone = async () => {
+    await saveContent();
+    router.push(`/z/${zineId}`);
+  };
   const togglePanel = (panel: SidePanel) => setActivePanel(activePanel === panel ? null : panel);
   const selectedBlock = content.blocks.find(b => b.id === selectedBlockId) || null;
   const isMobile = useIsMobile();
@@ -294,7 +320,14 @@ export default function EditPage() {
           <button onClick={undo} disabled={historyIndex <= 0} className="p-2 text-white/50 hover:text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a4 4 0 014 4v2M3 10l4-4M3 10l4 4" /></svg></button>
           <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 text-white/50 hover:text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a4 4 0 00-4 4v2M21 10l-4-4M21 10l-4 4" /></svg></button>
           <span className="text-white/40 text-xs mx-2">{saving ? 'Saving...' : lastSaved ? '✓' : ''}</span>
-          <button onClick={async () => { if (!pageId) return; await saveContent(); const ns = pageStatus === 'draft' ? 'ready' : 'draft'; createClient().from('pages').update({ status: ns }).eq('id', pageId).then(() => setPageStatus(ns)); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${pageStatus === 'ready' ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/70'}`}>{pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}</button>
+          <button onClick={async () => {
+            const currentPageId = pageIdRef.current;
+            if (!currentPageId) return;
+            await saveContent();
+            const ns = pageStatus === 'draft' ? 'ready' : 'draft';
+            const { error } = await createClient().from('pages').update({ status: ns }).eq('id', currentPageId);
+            if (!error) setPageStatus(ns);
+          }} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${pageStatus === 'ready' ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/70'}`}>{pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}</button>
           <button onClick={handleDone} className="px-4 py-1.5 bg-white text-black rounded-lg text-sm font-medium">Done</button>
         </div>
       </header>
