@@ -197,10 +197,25 @@ export default function EditPage() {
     }
   }, []); // no deps needed — reads from refs
 
+  // Auto-save 1.5s after any content change
   useEffect(() => {
     const timer = setTimeout(() => { if (pageId) saveContent(); }, 1500);
     return () => clearTimeout(timer);
   }, [content, pageId, saveContent]);
+
+  // Save on unmount (catches mobile back-nav / app switching)
+  useEffect(() => {
+    return () => { saveContent(); };
+  }, [saveContent]);
+
+  // Save when page becomes hidden (mobile home button / tab switch)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') saveContent();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [saveContent]);
 
   // Apply layout with content preservation
   const applyLayout = (layoutId: string) => {
@@ -301,34 +316,105 @@ export default function EditPage() {
     await saveContent();
     router.push(`/z/${zineId}`);
   };
+
+  const handleMarkReady = async () => {
+    const currentPageId = pageIdRef.current;
+    if (!currentPageId) return;
+    await saveContent();
+    const ns = pageStatus === 'draft' ? 'ready' : 'draft';
+    const { error } = await createClient().from('pages').update({ status: ns }).eq('id', currentPageId);
+    if (!error) setPageStatus(ns);
+  };
+
   const togglePanel = (panel: SidePanel) => setActivePanel(activePanel === panel ? null : panel);
   const selectedBlock = content.blocks.find(b => b.id === selectedBlockId) || null;
   const isMobile = useIsMobile();
   const [mobileSheet, setMobileSheet] = useState<SidePanel>(null);
+  const [showReadyModal, setShowReadyModal] = useState(false);
 
   return (
     <main className="h-screen h-[100dvh] bg-[#0a0a0a] flex flex-col overflow-hidden">
       <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) addImageBlock(e.target.files[0]); e.target.value = ''; }} className="hidden" />
 
+      {/* Ready confirmation modal */}
+      <AnimatePresence>
+        {showReadyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/70 flex items-end sm:items-center justify-center p-4"
+            onClick={() => setShowReadyModal(false)}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-[#1e1e1e] border border-white/10 rounded-2xl p-6 w-full max-w-sm"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="mb-1 text-2xl">🎉</div>
+              <h2 className="text-white font-semibold text-lg mb-1">Submit your page?</h2>
+              <p className="text-white/50 text-sm mb-6 leading-relaxed">
+                Once you mark your page as ready, it will be included in this issue when it's published. You can still make edits until the issue closes.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReadyModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/60 text-sm hover:bg-white/5 transition-colors"
+                >
+                  Keep editing
+                </button>
+                <button
+                  onClick={async () => { setShowReadyModal(false); await handleMarkReady(); }}
+                  className="flex-1 py-2.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
+                >
+                  Submit page ✓
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="bg-[#141414] border-b border-white/10 px-4 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href={`/z/${zineId}`} className="text-white/50 hover:text-white">←</Link>
+          <button onClick={handleDone} className="text-white/50 hover:text-white text-lg leading-none">←</button>
           <span className="text-white/70 text-sm hidden sm:block">{zineName}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={undo} disabled={historyIndex <= 0} className="p-2 text-white/50 hover:text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a4 4 0 014 4v2M3 10l4-4M3 10l4 4" /></svg></button>
-          <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 text-white/50 hover:text-white disabled:opacity-30"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a4 4 0 00-4 4v2M21 10l-4-4M21 10l-4 4" /></svg></button>
-          <span className="text-white/40 text-xs mx-2">{saving ? 'Saving...' : lastSaved ? '✓' : ''}</span>
-          <button onClick={async () => {
-            const currentPageId = pageIdRef.current;
-            if (!currentPageId) return;
-            await saveContent();
-            const ns = pageStatus === 'draft' ? 'ready' : 'draft';
-            const { error } = await createClient().from('pages').update({ status: ns }).eq('id', currentPageId);
-            if (!error) setPageStatus(ns);
-          }} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${pageStatus === 'ready' ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/70'}`}>{pageStatus === 'ready' ? '✓ Ready' : 'Mark Ready'}</button>
-          <button onClick={handleDone} className="px-4 py-1.5 bg-white text-black rounded-lg text-sm font-medium">Done</button>
+          {/* Undo/Redo — hidden on mobile to save space */}
+          <button onClick={undo} disabled={historyIndex <= 0} className="p-2 text-white/50 hover:text-white disabled:opacity-30 hidden sm:block">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a4 4 0 014 4v2M3 10l4-4M3 10l4 4" /></svg>
+          </button>
+          <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 text-white/50 hover:text-white disabled:opacity-30 hidden sm:block">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a4 4 0 00-4 4v2M21 10l-4-4M21 10l-4 4" /></svg>
+          </button>
+
+          {/* Save status */}
+          <span className="text-white/30 text-xs hidden sm:block">
+            {saving ? 'Saving...' : lastSaved ? '✓ Saved' : ''}
+          </span>
+
+          {/* Single smart CTA */}
+          {pageStatus === 'ready' ? (
+            <button
+              onClick={handleMarkReady}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/20 hover:bg-green-500/30 transition-colors"
+            >
+              <span>✓</span>
+              <span>Page ready</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowReadyModal(true)}
+              className="px-4 py-1.5 bg-white text-black rounded-lg text-sm font-semibold hover:bg-white/90 transition-colors"
+            >
+              Submit page
+            </button>
+          )}
         </div>
       </header>
 
