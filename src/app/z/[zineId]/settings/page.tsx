@@ -29,6 +29,13 @@ interface MemberData {
   profiles: { id: string; name: string; email: string; color: string };
 }
 
+interface FriendData {
+  user_id: string;
+  name: string;
+  email: string;
+  color: string;
+}
+
 export default function ZineSettingsPage() {
   const params = useParams();
   const router = useRouter();
@@ -41,6 +48,7 @@ export default function ZineSettingsPage() {
   const [zineName, setZineName] = useState('');
   const [releaseDay, setReleaseDay] = useState(1);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [friends, setFriends] = useState<FriendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inviting, setInviting] = useState(false);
@@ -68,6 +76,35 @@ export default function ZineSettingsPage() {
         .select('id, user_id, role, profiles(id, name, email, color)')
         .eq('zine_id', zineId);
       if (membersData) setMembers(membersData as unknown as MemberData[]);
+
+      // Load friends: people the current user shares other zines with
+      const { data: myMemberships } = await supabase
+        .from('memberships')
+        .select('zine_id')
+        .eq('user_id', user.id)
+        .neq('zine_id', zineId);
+
+      if (myMemberships && myMemberships.length > 0) {
+        const otherZineIds = myMemberships.map((m) => m.zine_id);
+        const { data: networkData } = await supabase
+          .from('memberships')
+          .select('user_id, profiles(id, name, email, color)')
+          .in('zine_id', otherZineIds)
+          .neq('user_id', user.id);
+
+        if (networkData) {
+          // Deduplicate by user_id
+          const seen = new Set<string>();
+          const deduped: FriendData[] = [];
+          for (const row of networkData as unknown as { user_id: string; profiles: { name: string; email: string; color: string } }[]) {
+            if (!seen.has(row.user_id)) {
+              seen.add(row.user_id);
+              deduped.push({ user_id: row.user_id, ...row.profiles });
+            }
+          }
+          setFriends(deduped);
+        }
+      }
 
       // Get current issue
       const { data: issueData } = await supabase
@@ -308,24 +345,56 @@ export default function ZineSettingsPage() {
             
             {/* Invite Form */}
             {isOwner && members.length < 10 && (
-              <form onSubmit={handleInvite} className="flex gap-3 mb-6">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="friend@example.com"
-                  className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
-                />
-                <motion.button
-                  type="submit"
-                  disabled={inviting || !inviteEmail.trim()}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-5 py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50"
-                >
-                  {inviting ? '...' : 'Invite'}
-                </motion.button>
-              </form>
+              <div className="mb-6">
+                {/* Friend quick-add chips */}
+                {(() => {
+                  const currentMemberUserIds = new Set(members.map((m) => m.user_id));
+                  const availableFriends = friends.filter((f) => !currentMemberUserIds.has(f.user_id));
+                  if (availableFriends.length === 0) return null;
+                  return (
+                    <div className="mb-4">
+                      <p className="text-xs text-white/40 mb-2">Add from your other zines</p>
+                      <div className="flex flex-wrap gap-2">
+                        {availableFriends.map((friend) => (
+                          <button
+                            key={friend.user_id}
+                            type="button"
+                            onClick={() => setInviteEmail(friend.email)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-white/80 transition-colors"
+                          >
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0"
+                              style={{ backgroundColor: friend.color || '#6366f1' }}
+                            >
+                              {friend.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            {friend.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <form onSubmit={handleInvite} className="flex gap-3">
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="friend@example.com"
+                    className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+                  />
+                  <motion.button
+                    type="submit"
+                    disabled={inviting || !inviteEmail.trim()}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-5 py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50"
+                  >
+                    {inviting ? '...' : 'Invite'}
+                  </motion.button>
+                </form>
+              </div>
             )}
 
             {/* Member List */}
